@@ -8,6 +8,8 @@ from matplotlib.ticker import MaxNLocator
 dlblue = '#0096ff'; dlorange = '#FF9300'; dldarkred='#C00000'; dlmagenta='#FF40FF'; dlpurple='#7030A0'; 
 plt.style.use(r'D:\Projects\Personal\Workspace\Python\deeplearning.mplstyle')
 
+import os
+
 def load_data_multi():
     data = np.loadtxt("data/ex1data2.txt", delimiter=',')
     X = data[:,:2]
@@ -544,7 +546,15 @@ def gradient_descent(X, y, w_in, b_in, cost_function, gradient_function, alpha, 
     return w, b, hist #return w,b and history for graphing
 
 def load_house_data():
-    data = np.loadtxt("./data/houses.txt", delimiter=',', skiprows=1)
+    file_path = r"D:\Projects\Personal\Workspace\Python\houses.txt"
+    if not os.path.exists(file_path):
+         raise FileNotFoundError(f"The file {file_path} does not exist.")
+    
+    try: 
+        data = np.loadtxt(file_path, delimiter=',', skiprows=1)
+  
+    except Exception as e:
+        print(f"An error occurred while loading the data: {e}")
     X = data[:,:4]
     y = data[:,4]
     return X, y
