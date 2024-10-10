@@ -1,0 +1,37 @@
+
+# How to Use WSL and Open it Through VS Code
+
+## Step 1: Launch WSL
+1. Open Windows Terminal or PowerShell.
+2. Type the following command to start WSL:
+   ```
+   wsl
+   ```
+3. This will open the default WSL distribution (e.g., Ubuntu). If you have multiple distributions installed, specify the distribution name:
+   ```
+   wsl -d Ubuntu
+   ```
+
+## Step 2: Open a Folder in Visual Studio Code Using WSL
+1. Navigate to your project directory in WSL using the `cd` command:
+   ```
+   cd /path/to/your/project
+   ```
+2. Open the project in Visual Studio Code using the `code .` command:
+   ```
+   code .
+   ```
+   This will open the current WSL directory in Visual Studio Code.
+
+## Step 3: Working with Git in WSL
+1. Make sure you're in your project's directory.
+2. Run the following commands to manage your repository:
+   - **Check status**: `git status`
+   - **Stage changes**: `git add .`
+   - **Commit changes**: `git commit -m "Your commit message"`
+   - **Push to GitHub**: `git push`
+
+## Step 4: Closing WSL
+1. To exit WSL, simply type `exit` and press `Enter`.
+
+Enjoy coding with WSL and Visual Studio Code!
