@@ -1,0 +1,95 @@
+
+# How to Install Conda on WSL
+
+## Step 1: Open WSL Terminal
+Start by launching your WSL terminal. You can open it through the Windows Start Menu or use any installed WSL distributions (e.g., Ubuntu).
+
+## Step 2: Download the Anaconda Installer
+Navigate to the official Anaconda download page (https://www.anaconda.com/download) from your browser and select the Linux version of the installer. Alternatively, you can download it directly in your WSL terminal using the following command:
+
+```bash
+wget https://repo.anaconda.com/archive/Anaconda3-2023.09-1-Linux-x86_64.sh
+```
+
+> Tip: The version in the URL (Anaconda3-2023.09-1-Linux-x86_64.sh) may change over time. Always check the latest Anaconda releases.
+
+## Step 3: Run the Anaconda Installer
+After downloading, run the installer script using the `bash` command:
+
+```bash
+bash Anaconda3-2023.09-1-Linux-x86_64.sh
+```
+
+Follow the on-screen instructions to complete the installation. This will include reading the license, choosing the installation path, and deciding whether to initialize Conda by running `conda init` at the end of the process.
+
+## Step 4: Initialize Conda
+If you didn’t choose to initialize Conda during the installation, run the following command to manually initialize it:
+
+```bash
+conda init
+```
+
+This will modify your `~/.bashrc` file to include Conda’s path and configurations.
+
+## Step 5: Restart the Terminal
+Close your WSL terminal and reopen it to activate the changes made by `conda init`.
+
+## Step 6: Verify the Conda Installation
+Check if Conda is installed and working correctly by running:
+
+```bash
+conda --version
+```
+
+You should see an output displaying the version of Conda installed, e.g., `conda 24.5.0`.
+
+## Step 7: Optional - Create and Manage Virtual Environments
+To create a new Conda environment, use:
+
+```bash
+conda create --name myenv
+```
+
+To activate your environment, use:
+
+```bash
+conda activate myenv
+```
+
+To deactivate, simply run:
+
+```bash
+conda deactivate
+```
+
+## Step 8: Verify PATH and Configuration (If Needed)
+If you encounter issues with the `conda` command not being found after installation, ensure the Conda path is correctly set. You can manually add Conda to your PATH by editing the `.bashrc` file:
+
+1. Open `.bashrc`:
+
+```bash
+nano ~/.bashrc
+```
+
+2. Add the following line at the end:
+
+```bash
+export PATH="$HOME/anaconda3/bin:$PATH"
+```
+
+3. Save the file and source it:
+
+```bash
+source ~/.bashrc
+```
+
+This should resolve any `command not found` issues.
+
+## Step 9: Update Conda
+To keep Conda up to date, run:
+
+```bash
+conda update conda
+```
+
+This completes the installation process for Conda on WSL.
