@@ -1,0 +1,52 @@
+
+# Instructions to Copy Conda Environment Using environment.yml
+
+## Step 1: Export the Environment
+On the source machine (e.g., your personal PC), export the environment to a `yml` file:
+```
+conda activate <your_env_name>
+conda env export > environment.yml
+```
+
+## Step 2: Add the environment.yml File to Your Repository
+- Navigate to your repository directory:
+```
+cd <your_repo_directory>
+```
+- Add the file to your repository and commit it:
+```
+git add environment.yml
+git commit -m "Add environment.yml for environment replication"
+git push origin main
+```
+
+## Step 3: Clone the Repository on the Target Machine
+On the target machine (e.g., your WSL environment), clone the repository if you haven't already:
+```
+git clone <your_repo_url>
+cd <your_repo_directory>
+```
+
+## Step 4: Create the Environment Using environment.yml
+Navigate to the directory containing the `environment.yml` file, then run:
+```
+conda env create -f environment.yml
+```
+
+## Step 5: Activate the New Environment
+Activate the environment by using:
+```
+conda activate <your_env_name>
+```
+
+## Step 6: Verify the Installation
+Check if all required packages are installed by running:
+```
+conda list
+```
+
+# Troubleshooting
+- **File Not Found Error:** Ensure the `environment.yml` file is in the directory where you're running the command.
+- **Typo in Filename:** Double-check that the filename is `environment.yml` (not `enviroment.yml` or similar).
+
+That's it! You have successfully copied the environment to your new machine.
