@@ -4,8 +4,12 @@ from sionna.fec.ldpc.encoding import LDPC5GEncoder
 from sionna.fec.ldpc.decoding import LDPC5GDecoder
 from sionna.channel import AWGN
 
+#load other libraries 
 import tensorflow as tf
 import numpy as np
+
+#load custum functions 
+from Functions import calculate_ber, calculate_bler
 
 
 
@@ -13,12 +17,12 @@ import numpy as np
 #LDPC built in Encoder/Decoder Sionna 
 
 #Parameters from the paper:
-block_size = 4096 #N, block size 
+block_size = 4096 #N, block size - codewords 
 code_rate = 3/4 # LDPC code rate
 num_iterations = 50 #BP iterations 
 inf_bits = int(block_size * code_rate) #information bits
 
-#Other parametes 
+#Other parameters 
 #generate random bits with NumPy
 input_bits = np.random.randint(0,2,inf_bits).astype(np.int32)
 #reshape input_bits to have a batch dimensions
@@ -29,17 +33,17 @@ snr_db = 5 #SNR in dB
 #Convert to noise power: (needed for AWGN channel in Sionna)
 noise_power = 10** (-snr_db/10)
 
-
+###Channel encoding and decoding:###
 #Initiate encoder and decoder
 encoder = LDPC5GEncoder(
-    k = inf_bits, #information bits
-    n = block_size #coded bits number
+    k = inf_bits, #information bits (input)
+    n = block_size #coded bits numbe, codewords (output)
 )
 
 decoder = LDPC5GDecoder(
     encoder = encoder, #pass encoder instance 
-    num_iter = num_iterations, #numper of BP iterations
-    hard_out = False #use soft-output decoding 
+    num_iter = num_iterations, #numper of BP iterations (Belief Propagation)
+    hard_out = True #use hard-output decoding 
 )
 
 awgn_channel = AWGN() #init AWGN channel layer 
@@ -56,7 +60,7 @@ noisy_sig_real = tf.cast(noisy_sig_real, dtype=tf.float32)
 
 decoded_bits = decoder(noisy_sig_real)
 
-print("Input message is:",input_bits)
-print("Decoded message is:", decoded_bits)
+# print("Input message is:",input_bits)
+# print("Decoded message is:", decoded_bits)
 
 
