@@ -1,6 +1,7 @@
 #This script is itended to contain various evaluation metrics and functions of the comms system 
 
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 # Function to calculate Bit Error Rate (BER)
 def calculate_ber(original_bits, decoded_bits):
@@ -26,3 +27,29 @@ def calculate_bler(original_bits, decoded_bits):
     
     # Return the ratio of the number of block errors to the total number of blocks
     return block_errors / tf.cast(total_blocks, tf.float32)
+
+
+# Function to plot BER and BLER on the same figure with two subplots
+def plot_ber_bler(snr_values, ber_results, bler_results):
+    # Create a figure and two subplots
+    fig, axs = plt.subplots(2, 1, figsize=(8, 10))
+    
+    # Plot BER on the first subplot
+    axs[0].plot(snr_values, ber_results, marker='o', label='BER')
+    axs[0].set_xlabel('SNR (dB)')
+    axs[0].set_ylabel('Bit Error Rate (BER)')
+    axs[0].set_title('BER vs. SNR')
+    axs[0].grid(True)
+    axs[0].legend()
+
+    # Plot BLER on the second subplot
+    axs[1].plot(snr_values, bler_results, marker='o', label='BLER', color='red')
+    axs[1].set_xlabel('SNR (dB)')
+    axs[1].set_ylabel('Block Error Rate (BLER)')
+    axs[1].set_title('BLER vs. SNR')
+    axs[1].grid(True)
+    axs[1].legend()
+
+    # Adjust layout for better spacing
+    plt.tight_layout()
+    plt.show()
