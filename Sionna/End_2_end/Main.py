@@ -42,7 +42,7 @@ encoder = LDPC5GEncoder(
 decoder = LDPC5GDecoder(
     encoder = encoder, #pass encoder instance 
     num_iter = num_iterations, #numper of BP iterations (Belief Propagation)
-    hard_out = True #use hard-output decoding 
+    hard_out = False #use hard-output decoding 
 )
 
 awgn_channel = AWGN() #init AWGN channel layer 
@@ -67,12 +67,14 @@ for snr_db_val in snr_db:
     #Transmit through AWGN channel: 
     noisy_sig = awgn_channel((encoded_bits,noise_power))
 
-    # Convert the noisy signal to float32 (use real part)
-    noisy_sig_real = tf.math.real(noisy_sig)
-    noisy_sig_real = tf.cast(noisy_sig_real, dtype=tf.float32)
-
+    # # Convert the noisy signal to float32 (use real part)
+    # noisy_sig_real = tf.math.real(noisy_sig)
+    # noisy_sig_real = tf.cast(noisy_sig_real, dtype=tf.float32)
+    #Convert to llrs 
+    noisy_sig_real = tf.math.real(noisy_sig) #extract real part
+    llrs = 2*noisy_sig_real / noise_power
     #Decode received signal: 
-    decoded_bits = decoder(noisy_sig_real)
+    decoded_bits = decoder(llrs)
 
     #Calculate ber and bler .numpy() to convert tensor to NumPy array
     ber = calculate_ber(input_bits,decoded_bits).numpy()
