@@ -23,12 +23,6 @@ num_iterations = 50 #BP iterations
 inf_bits = int(block_size * code_rate) #information bits
 
 #Other parameters 
-# #generate random bits with NumPy
-# input_bits = np.random.randint(0,2,inf_bits).astype(np.int32)
-# #reshape input_bits to have a batch dimensions
-# input_bits = input_bits.reshape(1,-1) #shape (1, inf_bits)
-# #convert to TensorFlow float 32 (needed for the object in sionna)
-# input_bits = tf.convert_to_tensor(input_bits, dtype = tf.float32)
 snr_db = np.arange(0,11,1) #SNR values in dB arranged by 1 from 0 to 10
 #List to store BER and BLER resuts 
 BLER_val =[]
@@ -92,16 +86,6 @@ for snr_db_val in snr_db:
 plot_ber_bler(snr_db,BER_val,BLER_val)
 
 
-# encoded_bits = encoder(input_bits)
-# #convert encoded bits to cpmplex Dtype 
-# encoded_bits = tf.cast(encoded_bits, dtype = tf.complex64)
-# noisy_sig = awgn_channel((encoded_bits,noise_power))
-
-# # Convert the noisy signal to float32 (use real part)
-# noisy_sig_real = tf.math.real(noisy_sig)
-# noisy_sig_real = tf.cast(noisy_sig_real, dtype=tf.float32)
-
-# decoded_bits = decoder(noisy_sig_real)
 
 # print("Input message is:",input_bits)
 # print("Decoded message is:", decoded_bits)

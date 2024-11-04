@@ -29,25 +29,26 @@ def calculate_bler(original_bits, decoded_bits):
     return block_errors / tf.cast(total_blocks, tf.float32)
 
 
-# Function to plot BER and BLER on the same figure with two subplots
 def plot_ber_bler(snr_values, ber_results, bler_results):
     # Create a figure and two subplots
     fig, axs = plt.subplots(2, 1, figsize=(8, 10))
     
-    # Plot BER on the first subplot
+    # Plot BER on the first subplot with a logarithmic y-axis
     axs[0].plot(snr_values, ber_results, marker='o', label='BER')
     axs[0].set_xlabel('SNR (dB)')
     axs[0].set_ylabel('Bit Error Rate (BER)')
-    axs[0].set_title('BER vs. SNR')
-    axs[0].grid(True)
+    axs[0].set_yscale('log')  # Set y-axis to logarithmic scale
+    axs[0].set_title('BER vs. SNR (Log Scale)')
+    axs[0].grid(True, which="both", linestyle='--', linewidth=0.5)
     axs[0].legend()
 
-    # Plot BLER on the second subplot
+    # Plot BLER on the second subplot with a logarithmic y-axis
     axs[1].plot(snr_values, bler_results, marker='o', label='BLER', color='red')
     axs[1].set_xlabel('SNR (dB)')
     axs[1].set_ylabel('Block Error Rate (BLER)')
-    axs[1].set_title('BLER vs. SNR')
-    axs[1].grid(True)
+    axs[1].set_yscale('log')  # Set y-axis to logarithmic scale
+    axs[1].set_title('BLER vs. SNR (Log Scale)')
+    axs[1].grid(True, which="both", linestyle='--', linewidth=0.5)
     axs[1].legend()
 
     # Adjust layout for better spacing
