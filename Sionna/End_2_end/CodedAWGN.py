@@ -73,6 +73,7 @@ constellation = Constellation(
     constellation_type = "qam",
     num_bits_per_symbol = num_bits_per_symbol,
     normalize = True, #true by default, but just to remember, normalization to have unit power
+    trainable = True, #to allow trainable optimatizations 
     dtype =tf.complex64 #data type 
 
 )
