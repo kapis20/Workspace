@@ -10,6 +10,8 @@ from sionna.mapping import Constellation, Mapper, Demapper
 import tensorflow as tf
 import numpy as np
 
+#needed for plots:
+import matplotlib.pyplot as plt
 #load custum functions 
 # from Functions import calculate_ber, calculate_bler, plot_ber_bler
 from Functions import plot_ber_bler
