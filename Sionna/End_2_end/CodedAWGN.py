@@ -8,7 +8,12 @@ from sionna.mapping import Constellation, Mapper, Demapper
 
 #load other libraries 
 import tensorflow as tf
+#for DL models:
+from tensorflow.keras import Model
+from  tensorflow.keras.layers import Layer, Dense
+
 import numpy as np
+
 
 #needed for plots:
 import matplotlib.pyplot as plt
@@ -20,24 +25,57 @@ from Functions import plot_ber_bler
 
 #LDPC built in Encoder/Decoder Sionna 
 
-#Parameters from the paper:
-block_size = 4096 #N, block size - codewords lenght
+###Parameters from the paper:###
+block_size = 4096 #N, block size - codewords lenght - must be multiple of num_bits_per_symbol
 batch_size = 10 #number of codewords simulated in parallel 
 code_rate = 3/4 # LDPC code rate
 num_iterations = 50 #BP iterations 
 inf_bits = int(block_size * code_rate) #information bits
 num_bits_per_symbol = 6 #bits per modulated symbol e.q. 2^6 = 64 (QAM)
+###########################################################################
 
 #Other parameters 
-#snr_db = np.arange(0,11,1) #SNR values in dB arranged by 1 from 0 to 10
-snr_db = 5
-#List to store BER and BLER resuts 
-BLER_val =[]
-BER_val = []
+#SNR range for evaluation and training (dB)
+ebno_db_min = 4.0
+ebno_db_max = 8.0
+modulation_order = 2**num_bits_per_symbol #64 = 2^6
+num_symbols_per_codeword = block_size/num_bits_per_symbol #number of modulated baseband symbols per codeword
+
+###########################################################################
+###Evaluation configuration###
+results_filename = "awgn_autoencoder_results" #save results to ""
 
 
-# ##Convert to noise power: (needed for AWGN channel in Sionna)
-# noise_power = 10** (-snr_db/10)
+# #snr_db = 5
+# #List to store BER and BLER resuts 
+# BLER_val =[]
+# BER_val = []
+
+### Neural Demapper### 
+class NeuralDemapper(Layer):
+    def __init__(self):
+        super().__init__()
+
+        self.dense_1 = Dense(64, 'relu') #first layer 
+        self.dense_2 = Dense(64, 'relu') #second layer
+        self.dense_3 = Dense(num_bits_per_symbol, None) #feature correspond to the LLRs for every bits carried by a symbol 
+    def call(self, inputs):
+        y,no = inputs 
+
+        #log 10 scale to help with performance 
+        no_db = log10(no)
+
+        #stacking the real and imaginary components of the complex received samples and the noise variance
+        no_db = tf.tile(no_db, [batch_size, num_symbols_per_codeword]) #[batch size, num_symbols_per_codeword]; might need to change batch size to 1 
+        z = tf.stack([tf.math.real(y),
+                      tf.math.imag(y),
+                      no_db], axis =2)
+        
+        llr = self.dense_1(z)
+        llr = self.dense_2(llr)
+        llr = self.dense_3(llr)
+
+        return llr 
 
 ###Channel encoding and decoding:###
 #Initiate encoder and decoder
@@ -82,9 +120,9 @@ constellation.show()
 print("Constellation points are:", constellation.points.numpy())
 #symbol mapping, initialize mapper: 
 mapper = Mapper(constellation = constellation)
-symbols = mapper(encoded_bits) #create symbols 
+# symbols = mapper(encoded_bits) #create symbols 
 
-print("Mapped symbols are:",symbols.numpy())
+# print("Mapped symbols are:",mapper.numpy())
 
 ### AWGN channel ###
 awgn_channel = AWGN() #init AWGN channel layer 
