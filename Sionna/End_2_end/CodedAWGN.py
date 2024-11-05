@@ -4,6 +4,7 @@ from sionna.fec.ldpc.encoding import LDPC5GEncoder
 from sionna.fec.ldpc.decoding import LDPC5GDecoder
 from sionna.channel import AWGN
 from sionna.utils import compute_ber, compute_bler, BinarySource, ebnodb2no, hard_decisions
+from sionna.mapping import Constellation, Mapper, Demapper 
 
 #load other libraries 
 import tensorflow as tf
@@ -23,6 +24,7 @@ batch_size = 10 #number of codewords simulated in parallel
 code_rate = 3/4 # LDPC code rate
 num_iterations = 50 #BP iterations 
 inf_bits = int(block_size * code_rate) #information bits
+num_bits_per_symbol = 6 #bits per modulated symbol e.q. 2^6 = 64 (QAM)
 
 #Other parameters 
 #snr_db = np.arange(0,11,1) #SNR values in dB arranged by 1 from 0 to 10
@@ -45,7 +47,7 @@ encoder = LDPC5GEncoder(
 decoder = LDPC5GDecoder(
     encoder = encoder, #pass encoder instance 
     num_iter = num_iterations, #numper of BP iterations (Belief Propagation)
-    hard_out = True, #use hard-output decoding 
+    hard_out = False, #use soft-output decoding 
     return_infobits = True, # return decoded parity bits
     cn_type = "boxplus-phi" #numerical, stable single parity check
 )
@@ -63,8 +65,29 @@ print("Encoded bits are:",encoded_bits)
 print("Shape of encoded bits is:", encoded_bits.shape)
 print("Total number of processed bits is:", np.prod(encoded_bits.shape))
 
+###Constellation and mapping:###
+#initiate the constelation for 64QAM
+constellation = Constellation(
+    constellation_type = "qam",
+    num_bits_per_symbol = num_bits_per_symbol,
+    normalize = True, #true by default, but just to remember, normalization to have unit power
+    dtype =tf.complex64 #data type 
+
+)
+print("Constelattion is:")
+constellation.show()
+print("Constellation points are:", constellation.points.numpy())
+#symbol mapping, initialize mapper: 
+mapper = Mapper(constellation = constellation)
+symbols = mapper(encoded_bits) #create symbols 
+
+print("Mapped symbols are:",symbols.numpy())
+
 ### AWGN channel ###
 awgn_channel = AWGN() #init AWGN channel layer 
+
+#caluclate noise variance: 
+noise_variance = ebnodb2no(snr_db,num_bits_per_symbol,code_rate)
 
 
 
