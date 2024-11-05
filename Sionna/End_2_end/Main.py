@@ -3,14 +3,15 @@ import sionna
 from sionna.fec.ldpc.encoding import LDPC5GEncoder
 from sionna.fec.ldpc.decoding import LDPC5GDecoder
 from sionna.channel import AWGN
+from sionna.utils import compute_ber, compute_bler
 
 #load other libraries 
 import tensorflow as tf
 import numpy as np
 
 #load custum functions 
-from Functions import calculate_ber, calculate_bler, plot_ber_bler
-
+# from Functions import calculate_ber, calculate_bler, plot_ber_bler
+from Functions import plot_ber_bler
 
 
 
@@ -42,7 +43,7 @@ encoder = LDPC5GEncoder(
 decoder = LDPC5GDecoder(
     encoder = encoder, #pass encoder instance 
     num_iter = num_iterations, #numper of BP iterations (Belief Propagation)
-    hard_out = False #use hard-output decoding 
+    hard_out = True #use hard-output decoding 
 )
 
 awgn_channel = AWGN() #init AWGN channel layer 
@@ -76,9 +77,11 @@ for snr_db_val in snr_db:
     #Decode received signal: 
     decoded_bits = decoder(llrs)
 
+    #ensure decoded bits are binary tensor
+    decoded_bits = tf.cast(decoded_bits, tf.float32)
     #Calculate ber and bler .numpy() to convert tensor to NumPy array
-    ber = calculate_ber(input_bits,decoded_bits).numpy()
-    bler = calculate_bler(input_bits,decoded_bits).numpy()
+    ber = compute_ber(input_bits,decoded_bits).numpy()
+    bler = compute_bler(input_bits,decoded_bits).numpy()
 
     #store results
     BER_val.append(ber)
