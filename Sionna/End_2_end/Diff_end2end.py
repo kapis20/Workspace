@@ -16,7 +16,8 @@ from sionna.utils import BinarySource, ebnodb2no, log10, expand_to_rank, insert_
 from sionna.fec.ldpc.encoding import LDPC5GEncoder
 from sionna.fec.ldpc.decoding import LDPC5GDecoder
 from sionna.mapping import Mapper, Demapper, Constellation
-from sionna.utils import sim_ber, PlotBER
+from sionna.utils import sim_ber
+from sionna.utils.plotting import PlotBER
 
 sionna.config.seed = 42 # Set seed for reproducible random number generation
 
@@ -28,8 +29,8 @@ import pickle
 ###############################################
 # SNR range for evaluation and training [dB]
 ###############################################
-ebno_db_min = 4.0
-ebno_db_max = 8.0
+ebno_db_min = 6.0
+ebno_db_max = 18.0
 
 ###############################################
 # Modulation and coding configuration
@@ -37,7 +38,7 @@ ebno_db_max = 8.0
 num_bits_per_symbol = 6 # Baseline is 64-QAM
 modulation_order = 2**num_bits_per_symbol
 coderate = 0.75 # Coderate for the outer code
-n = 4096 # Codeword length [bit]. Must be a multiple of num_bits_per_symbol
+n = 4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
@@ -101,7 +102,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate) #noise variation 
-        bits = self.binary_source([batch_size, 1200]) # Blocklength set to 1200 bits
+        bits = self.binary_source([batch_size, n]) # Blocklength set to 1200 bits
         # Reshape bits to [batch_size, num_symbols_per_codeword, num_bits_per_symbol]
         # bits_reshaped = tf.reshape(bits, [batch_size, num_symbols_per_codeword, num_bits_per_symbol])
         x = self.mapper(bits) #symbols 
@@ -121,7 +122,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 1000 #was used 30000
+NUM_TRAINING_ITERATIONS = 100 #was used 30000
 
 # Set a seed for reproducibility
 tf.random.set_seed(1)
@@ -136,7 +137,8 @@ optimizer = tf.keras.optimizers.Adam()
 for i in range(NUM_TRAINING_ITERATIONS):
     # Forward pass
     with tf.GradientTape() as tape:
-        loss = model_train(BATCH_SIZE, 6.0) # The model is assumed to return the BMD rate
+        loss = model_train(BATCH_SIZE, 6.0) #training SNR set to 6dB, get loss function for the most optimized under 6dB 
+        #The model is assumed to return the BMD rate
     # Computing and applying gradients
     grads = tape.gradient(loss, model_train.trainable_weights)
     optimizer.apply_gradients(zip(grads, model_train.trainable_weights))
@@ -164,8 +166,10 @@ with open('weights-neural-demapper', 'rb') as f:
 
 
 # Computing and plotting BER
-PlotBER.simulate(model,
-                  ebno_dbs=np.linspace(ebno_db_min, ebno_db_max, 10),
+# create an instance of the PlotBER class 
+plot_BER = PlotBER(title = "Neural Demapper")
+plot_BER.simulate(model,
+                  ebno_dbs=np.linspace(ebno_db_min, ebno_db_max, 20),
                   batch_size=BATCH_SIZE,
                   num_target_block_errors=100,
                   legend="Trained model",
