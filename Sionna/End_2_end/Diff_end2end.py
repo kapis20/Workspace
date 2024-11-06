@@ -23,6 +23,8 @@ sionna.config.seed = 42 # Set seed for reproducible random number generation
 
 
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')  # Alternatively, try 'Agg' if you're not displaying the plot
 import numpy as np
 import pickle
 
@@ -167,12 +169,32 @@ with open('weights-neural-demapper', 'rb') as f:
 
 # Computing and plotting BER
 # create an instance of the PlotBER class 
-plot_BER = PlotBER(title = "Neural Demapper")
-plot_BER.simulate(model,
-                  ebno_dbs=np.linspace(ebno_db_min, ebno_db_max, 20),
-                  batch_size=BATCH_SIZE,
-                  num_target_block_errors=100,
-                  legend="Trained model",
-                  soft_estimates=True,
-                  max_mc_iter=100,
-                  show_fig=True);
+# plot_BER = PlotBER(title = "Neural Demapper")
+# plot_BER.simulate(model,
+#                   ebno_dbs=np.linspace(ebno_db_min, ebno_db_max, 20),
+#                   batch_size=BATCH_SIZE,
+#                   num_target_block_errors=100,
+#                   legend="Trained model",
+#                   soft_estimates=True,
+#                   max_mc_iter=100,
+#                   show_fig=True,
+#                   save_fig =True,
+#                   path = "BLER_figure.png");
+
+# Define the SNR range and batch size
+ebno_dbs = np.linspace(ebno_db_min, ebno_db_max, 10)
+
+
+# Run the BER simulation using `sim_ber`
+ber, bler = sim_ber(
+    # mc_fun=monte_carlo_fun,
+    ebno_dbs=ebno_dbs,
+    batch_size=BATCH_SIZE,
+    max_mc_iter=100,  # Maximum Monte Carlo iterations per SNR point
+    num_target_block_errors=100,  # Stop if 100 block errors are reached
+    soft_estimates=True
+)
+
+# Print results
+print("BER:", ber)
+print("BLER:", bler)
