@@ -48,8 +48,8 @@ ebno_db_max = 18.0
 ###############################################
 num_bits_per_symbol = 6 # Baseline is 64-QAM
 modulation_order = 2**num_bits_per_symbol
-coderate = 0.75 # Coderate for the outer code
-n = 4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
+coderate = 0.75 #0.75 # Coderate for the outer code
+n = 4098 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
@@ -57,7 +57,7 @@ num_iter = 50 #number of BP iterations
 #batch size = 10 
 #Other parametes:
 
-BATCH_SIZE = 128 #how many examples are processed by sionna in parallel 
+BATCH_SIZE = 10#10 #how many examples are processed by sionna in parallel 
 
 #Name to store weights 
 model_weights_path = "weights-neural-demapper"
@@ -197,7 +197,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 30000 #was used 30000
+NUM_TRAINING_ITERATIONS = 5000 #was used 30000
 
 # Set a seed for reproducibility
 tf.random.set_seed(1)
@@ -213,13 +213,13 @@ constellation_data['constellation_before']= model_train.constellation.points.num
 
 
 # Adam optimizer (SGD variant)
-optimizer = tf.keras.optimizers.Adam()
+optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001)
 
 # Training loop
 for i in range(NUM_TRAINING_ITERATIONS):
     # Forward pass
     with tf.GradientTape() as tape:
-        loss = model_train(BATCH_SIZE, 6.0) #training SNR set to 6dB, get loss function for the most optimized under 6dB 
+        loss = model_train(BATCH_SIZE, 6.0)#6.0) #training SNR set to 6dB, get loss function for the most optimized under 6dB 
         #The model is assumed to return the BMD rate
     # Computing and applying gradients
     grads = tape.gradient(loss, model_train.trainable_weights)
@@ -264,7 +264,9 @@ def load_weights(model, model_weights_path):
 #model eval
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
-ber_NN, bler_NN = sim_ber(model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000)
+ber_NN, bler_NN = sim_ber(
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=100, max_mc_iter=100,soft_estimates=True)
+    #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
@@ -272,7 +274,24 @@ results['BER']['autoencoder-NN'] = ber_NN.numpy()
 with open("bler_results.pkl", 'wb') as f:
     pickle.dump((results), f)
 
+# Define Eb/N0 range for simulation
+EBN0_DB_MIN = 6.0  # Minimum Eb/N0 in dB
+EBN0_DB_MAX = 18.0  # Maximum Eb/N0 in dB
 
+# # Create PlotBER instance for plotting
+# ber_plots = PlotBER()
+
+# # Run simulation and plot
+# ber_plots.simulate(
+#     model,
+#     ebno_dbs=np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, 20),  # 20 points in Eb/N0 range
+#     batch_size=BATCH_SIZE,
+#     num_target_block_errors=100,  # Stop after observing 100 block errors per Eb/N0 point
+#     legend="Trained model",
+#     soft_estimates=True,  # Use soft estimates for demapping
+#     max_mc_iter=100,  # Max number of Monte Carlo iterations
+#     show_fig=True  # Display the plot
+# )
 
 #Time calculations: 
 # Calculate and print total execution time
