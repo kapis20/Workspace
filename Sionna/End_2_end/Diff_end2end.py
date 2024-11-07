@@ -61,7 +61,9 @@ BATCH_SIZE = 128 #how many examples are processed by sionna in parallel
 
 #Name to store weights 
 model_weights_path = "weights-neural-demapper"
-
+##############################################
+#Evaluation metrics 
+##############################################
 
 # Dictionary to store both BER and BLER results for each model
 results = {
@@ -69,11 +71,18 @@ results = {
     'BER': {},
     'BLER': {}
 }
-
+#Dictionary to store constellation data 
 constellation_data = {
     'constellation_before': {},
     'constellation_after':{}
 }
+
+# # Dictionary to store the AWGN channel data before and after training
+# awgn_data = {
+#     "before_training": {},
+#     "after_training": {}
+# } Perhaps something to look into the future 
+
 
 ###############################################
 #Cystom layers - Demapper 
