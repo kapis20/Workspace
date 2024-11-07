@@ -42,7 +42,8 @@ def plot_ber_bler(results_filename):
 
     # Adjust layout to prevent overlap
     plt.tight_layout()
-
+    # Save the plot as an image file
+    plt.savefig("ber_bler_plot.png")
     # Show the plot
     plt.show()
 
@@ -78,6 +79,8 @@ def plot_constellation(constellation_data_filename, stage="constellation_before"
     plt.title(f"Constellation Plot ({stage})")
     plt.grid(True)
     plt.legend()
+    # Save the plot as an image file
+    plt.savefig(f"{stage}_constellation_plot.png")
     plt.show()
 
 

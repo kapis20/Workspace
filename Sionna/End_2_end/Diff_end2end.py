@@ -197,7 +197,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 100 #was used 30000
+NUM_TRAINING_ITERATIONS = 30000 #was used 30000
 
 # Set a seed for reproducibility
 tf.random.set_seed(1)
