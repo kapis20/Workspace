@@ -18,20 +18,25 @@ ebno_dbs = results['ebno_dbs']['autoencoder-NN']
 BLER = results['BLER']['autoencoder-NN']
 BER = results['BER']['autoencoder-NN']
 
-# Create the BLER plot
-plt.figure(figsize=(10, 8))
-#Plot BLER 
-# Plot BLER
-plt.semilogy(ebno_dbs, BLER, 'o-', c='C0', label='BLER - autoencoder-NN')
+# Create a figure with two subplots, one for BER and one for BLER
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
-# Plot BER
-plt.semilogy(ebno_dbs, BER, 'x--', c='C1', label='BER - autoencoder-NN')
-# Add labels and grid
-plt.xlabel(r"$E_b/N_0$ (dB)")
-plt.ylabel("Error rate (BLER/BER")
-plt.grid(which="both", linestyle='--', linewidth=0.5)
-plt.ylim((1e-4, 1.0))
-plt.legend()
+# Plot BER on the top subplot
+ax1.semilogy(ebno_dbs, BER, 'x--', c='C1', label='BER - autoencoder-NN')
+ax1.set_ylabel("BER")
+ax1.grid(which="both", linestyle='--', linewidth=0.5)
+ax1.legend()
+ax1.set_ylim((1e-4, 1.0))
+
+# Plot BLER on the bottom subplot
+ax2.semilogy(ebno_dbs, BLER, 'o-', c='C0', label='BLER - autoencoder-NN')
+ax2.set_xlabel(r"$E_b/N_0$ (dB)")
+ax2.set_ylabel("BLER")
+ax2.grid(which="both", linestyle='--', linewidth=0.5)
+ax2.legend()
+ax2.set_ylim((1e-4, 1.0))
+
+# Adjust layout to prevent overlap
 plt.tight_layout()
 
 # Show the plot
