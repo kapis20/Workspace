@@ -132,24 +132,62 @@ class End2EndSystem(Model): # Inherits from Keras Model
 
         self.training = training
 
+        ## conditional encoder and decoder, use only when in not training mode- other components to be added here later 
+        if not self.training:
+            #initialize encoder and decoder if not in training mode 
+            self.encoder = LDPC5GEncoder(k,n, num_bits_per_symbol) #pass no of info bits and lenght of the codeword, and bits per symbol
+            self.decoder = LDPC5GDecoder(
+                encoder=self.encoder,       # Pass encoder instance
+                cn_type="boxplus-phi",      # Use stable, numerical single parity check function
+                hard_out=False,             # Use soft-output decoding
+                num_iter=num_iter           # Number of BP iterations
+    )
+
+
     @tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
+        #noise variance:
+        no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
 
-        # no channel coding used; we set coderate=1.0
-        no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate) #noise variation 
-        bits = self.binary_source([batch_size, n]) # Blocklength set to 1200 bits
+        #########################
+        ###Transmitter 
+        ########################
+        #Generate bits:
+        #Training mode 
+        if self.training:
+            bits = self.binary_source([batch_size,n]) # code generates the output as if they were already encoded
+            #hence n - for codeword lenght 
+        else: #not training mode
+            uncoded_bits = self.binary_source([batch_size,k])# smaller number of inf bits, that are later fed to encoder 
+            #that produces codeword of lenght n 
+            bits = self.encoder(uncoded_bits)
         # Reshape bits to [batch_size, num_symbols_per_codeword, num_bits_per_symbol]
         # bits_reshaped = tf.reshape(bits, [batch_size, num_symbols_per_codeword, num_bits_per_symbol])
+        #Map bits to symbols:
         x = self.mapper(bits) #symbols 
+        ############################
+        #Channel:
+        ############################
         y = self.awgn_channel([x, no]) #passed symbols to the channel together with noise variance 
+
+        ############################
+        #Receiver
+        ############################
+        # Demapping 
         llr = self.demapper(y)  # Call the NeuralDemapper custom layer as any other
+        llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
+        ############################
+        #Loss or Output
+        ############################
         #if training mode, then BCE loss function will be returned between binary date and llrs 
         #BCE compares how well demapper can recover the transmitted bits from received symbols 
         if self.training:
             loss = self.bce(bits, llr)
             return loss
         else:
-            return bits, llr
+            #Decode llrs
+            decoded_bits = self.decoder(llr)
+            return uncoded_bits, decoded_bits
         
 
 
@@ -226,7 +264,7 @@ def load_weights(model, model_weights_path):
 #model eval
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
-ber_NN, bler_NN = sim_ber(model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=100, max_mc_iter=100)
+ber_NN, bler_NN = sim_ber(model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000)
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
