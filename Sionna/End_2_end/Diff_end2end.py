@@ -1,3 +1,7 @@
+################################################
+#necessary imports:
+################################################
+import time # to monitor time execution of model
 import os
 import sionna
 
@@ -29,6 +33,9 @@ import matplotlib
 matplotlib.use('TkAgg')  # Alternatively, try 'Agg' if you're not displaying the plot
 import numpy as np
 import pickle
+
+# Initialize timing for entire script
+start_time = time.time()
 
 ###############################################
 # SNR range for evaluation and training [dB]
@@ -132,6 +139,30 @@ class End2EndSystem(Model): # Inherits from Keras Model
         
 
 ###################################################
+#Constellation function define, just for eval metrics
+###################################################
+def plot_constellation(constellation, title="Constellation Plot"):
+    points = constellation.points.numpy()
+    real = points.real
+    imag = points.imag
+    
+    plt.figure(figsize=(6, 6))
+    plt.scatter(real, imag, label="Constellation Points", color='orange')
+    
+    # Annotate each point with its binary representation
+    for i, point in enumerate(points):
+        plt.text(point.real, point.imag, f'{i:0{num_bits_per_symbol}b}', 
+                 ha='center', va='center', fontsize=8)
+    
+    plt.xlabel("Real Part")
+    plt.ylabel("Imaginary Part")
+    plt.title(title)
+    plt.grid(True)
+    plt.legend()
+    plt.show(block = False) #avoid blocking the whole script execution
+
+
+###################################################
 #Training - training loops as per SDG 
 ###################################################
 
@@ -141,8 +172,13 @@ NUM_TRAINING_ITERATIONS = 100 #was used 30000
 # Set a seed for reproducibility
 tf.random.set_seed(1)
 
+# Track time for model training
+training_start_time = time.time()
+
 # Instantiating the end-to-end model for training
 model_train = End2EndSystem(training=True)
+# Plot constellation before training
+plot_constellation(model_train.constellation, title="Constellation Before Training")
 
 # Adam optimizer (SGD variant)
 optimizer = tf.keras.optimizers.Adam()
@@ -160,6 +196,13 @@ for i in range(NUM_TRAINING_ITERATIONS):
     if i % 100 == 0:
         print(f"{i}/{NUM_TRAINING_ITERATIONS}  Loss: {loss:.2E}", end="\r")
 
+# End time for training
+training_end_time = time.time()
+
+# Plot constellation after training
+################################################
+plot_constellation(model_train.constellation, title="Constellation After Training")
+
 # Save the weightsin a file
 weights = model_train.get_weights()
 with open(model_weights_path, 'wb') as f:
@@ -169,6 +212,8 @@ with open(model_weights_path, 'wb') as f:
 ##################################################
 #model evaluation 
 ##################################################
+
+
 
 # Define the SNR range for evaluation
 ebno_dbs = np.arange(ebno_db_min, ebno_db_max, 0.5)
@@ -183,10 +228,21 @@ def load_weights(model, model_weights_path):
 #model eval
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
-ber_NN, bler_NN = sim_ber(model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000)
+ber_NN, bler_NN = sim_ber(model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=100, max_mc_iter=100)
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
 # Save the results to a file (optional)
 with open("bler_results.pkl", 'wb') as f:
     pickle.dump((results), f)
+
+
+
+#Time calculations: 
+# Calculate and print total execution time
+end_time = time.time()
+total_execution_time = end_time - start_time
+training_execution_time = training_end_time - training_start_time
+
+print(f"\nTotal Execution Time: {total_execution_time:.2f} seconds")
+print(f"Training Execution Time: {training_execution_time:.2f} seconds")
