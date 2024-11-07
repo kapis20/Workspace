@@ -70,6 +70,11 @@ results = {
     'BLER': {}
 }
 
+constellation_data = {
+    'constellation_before': {},
+    'constellation_after':{}
+}
+
 ###############################################
 #Cystom layers - Demapper 
 ###############################################
@@ -138,28 +143,6 @@ class End2EndSystem(Model): # Inherits from Keras Model
             return bits, llr
         
 
-###################################################
-#Constellation function define, just for eval metrics
-###################################################
-def plot_constellation(constellation, title="Constellation Plot"):
-    points = constellation.points.numpy()
-    real = points.real
-    imag = points.imag
-    
-    plt.figure(figsize=(6, 6))
-    plt.scatter(real, imag, label="Constellation Points", color='orange')
-    
-    # Annotate each point with its binary representation
-    for i, point in enumerate(points):
-        plt.text(point.real, point.imag, f'{i:0{num_bits_per_symbol}b}', 
-                 ha='center', va='center', fontsize=8)
-    
-    plt.xlabel("Real Part")
-    plt.ylabel("Imaginary Part")
-    plt.title(title)
-    plt.grid(True)
-    plt.legend()
-    plt.show(block = False) #avoid blocking the whole script execution
 
 
 ###################################################
@@ -177,8 +160,10 @@ training_start_time = time.time()
 
 # Instantiating the end-to-end model for training
 model_train = End2EndSystem(training=True)
-# Plot constellation before training
-plot_constellation(model_train.constellation, title="Constellation Before Training")
+
+# Extract and save constellation data before training
+constellation_data['constellation_before']= model_train.constellation.points.numpy()
+
 
 # Adam optimizer (SGD variant)
 optimizer = tf.keras.optimizers.Adam()
@@ -199,9 +184,13 @@ for i in range(NUM_TRAINING_ITERATIONS):
 # End time for training
 training_end_time = time.time()
 
-# Plot constellation after training
-################################################
-plot_constellation(model_train.constellation, title="Constellation After Training")
+# Extract and save constellation data after training
+constellation_data['constellation_after'] = model_train.constellation.points.numpy()
+
+# Save constellation data to a .pkl file
+with open("constellation_data.pkl", "wb") as f:
+    pickle.dump(constellation_data, f)
+
 
 # Save the weightsin a file
 weights = model_train.get_weights()
