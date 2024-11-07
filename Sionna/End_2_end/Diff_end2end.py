@@ -265,7 +265,7 @@ def load_weights(model, model_weights_path):
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=100, max_mc_iter=100,soft_estimates=True)
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True)
     #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
