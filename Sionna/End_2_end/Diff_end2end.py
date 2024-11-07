@@ -55,6 +55,14 @@ BATCH_SIZE = 128 #how many examples are processed by sionna in parallel
 #Name to store weights 
 model_weights_path = "weights-neural-demapper"
 
+
+# Dictionary to store both BER and BLER results for each model
+results = {
+    'ebno_dbs': {},  # SNR values for reference
+    'BER': {},
+    'BLER': {}
+}
+
 ###############################################
 #Cystom layers - Demapper 
 ###############################################
@@ -162,43 +170,23 @@ with open(model_weights_path, 'wb') as f:
 #model evaluation 
 ##################################################
 
-# Instantiating the end-to-end model for evaluation
-# model = End2EndSystem(training=False)
-# # Run one inference to build the layers and loading the weights
-# model(tf.constant(1, tf.int32), tf.constant(10.0, tf.float32))
-# with open('weights-neural-demapper', 'rb') as f:
-#     weights = pickle.load(f)
-#     model.set_weights(weights)
-
-
-# Computing and plotting BER
-# create an instance of the PlotBER class 
-# plot_BER = PlotBER(title = "Neural Demapper")
-# plot_BER.simulate(model,
-#                   ebno_dbs=np.linspace(ebno_db_min, ebno_db_max, 20),
-#                   batch_size=BATCH_SIZE,
-#                   num_target_block_errors=100,
-#                   legend="Trained model",
-#                   soft_estimates=True,
-#                   max_mc_iter=100,
-#                   show_fig=True);
-
 # Define the SNR range for evaluation
 ebno_dbs = np.arange(ebno_db_min, ebno_db_max, 0.5)
-
+#store the SNR values in the results array
+results['ebno_dbs']['autoencoder-NN'] = ebno_dbs
 # Define a function to load model weights if required
 def load_weights(model, model_weights_path):
     model(1, tf.constant(10.0, tf.float32))  # Run once to initialize
     with open(model_weights_path, 'rb') as f:
         weights = pickle.load(f)
     model.set_weights(weights)
-#directory to store BLER results 
-BLER = {}
+#model eval
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
-_, bler_conventional = sim_ber(model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000)
-BLER['autoencoder-NN'] = bler_conventional.numpy()
+ber_NN, bler_NN = sim_ber(model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000)
+results['BLER']['autoencoder-NN'] = bler_NN.numpy()
+results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
-# Save the BLER results to a file (optional)
+# Save the results to a file (optional)
 with open("bler_results.pkl", 'wb') as f:
-    pickle.dump((ebno_dbs, BLER), f)
+    pickle.dump((results), f)
