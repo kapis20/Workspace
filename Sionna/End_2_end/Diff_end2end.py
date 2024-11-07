@@ -12,12 +12,14 @@ tf.config.threading.set_intra_op_parallelism_threads(num_cores)
 tf.config.threading.set_inter_op_parallelism_threads(num_cores)
 
 from sionna.channel import AWGN
+
 from sionna.utils import BinarySource, ebnodb2no, log10, expand_to_rank, insert_dims
+from sionna.utils import sim_ber
+from sionna.utils.plotting import PlotBER
+
 from sionna.fec.ldpc.encoding import LDPC5GEncoder
 from sionna.fec.ldpc.decoding import LDPC5GDecoder
 from sionna.mapping import Mapper, Demapper, Constellation
-from sionna.utils import sim_ber
-from sionna.utils.plotting import PlotBER
 
 sionna.config.seed = 42 # Set seed for reproducible random number generation
 
@@ -50,6 +52,8 @@ num_iter = 50 #number of BP iterations
 
 BATCH_SIZE = 128 #how many examples are processed by sionna in parallel 
 
+#Name to store weights 
+model_weights_path = "weights-neural-demapper"
 
 ###############################################
 #Cystom layers - Demapper 
@@ -150,7 +154,7 @@ for i in range(NUM_TRAINING_ITERATIONS):
 
 # Save the weightsin a file
 weights = model_train.get_weights()
-with open('weights-neural-demapper', 'wb') as f:
+with open(model_weights_path, 'wb') as f:
     pickle.dump(weights, f)
 
 
@@ -159,12 +163,12 @@ with open('weights-neural-demapper', 'wb') as f:
 ##################################################
 
 # Instantiating the end-to-end model for evaluation
-model = End2EndSystem(training=False)
-# Run one inference to build the layers and loading the weights
-model(tf.constant(1, tf.int32), tf.constant(10.0, tf.float32))
-with open('weights-neural-demapper', 'rb') as f:
-    weights = pickle.load(f)
-    model.set_weights(weights)
+# model = End2EndSystem(training=False)
+# # Run one inference to build the layers and loading the weights
+# model(tf.constant(1, tf.int32), tf.constant(10.0, tf.float32))
+# with open('weights-neural-demapper', 'rb') as f:
+#     weights = pickle.load(f)
+#     model.set_weights(weights)
 
 
 # Computing and plotting BER
@@ -177,24 +181,24 @@ with open('weights-neural-demapper', 'rb') as f:
 #                   legend="Trained model",
 #                   soft_estimates=True,
 #                   max_mc_iter=100,
-#                   show_fig=True,
-#                   save_fig =True,
-#                   path = "BLER_figure.png");
+#                   show_fig=True);
 
-# Define the SNR range and batch size
-ebno_dbs = np.linspace(ebno_db_min, ebno_db_max, 10)
+# Define the SNR range for evaluation
+ebno_dbs = np.arange(ebno_db_min, ebno_db_max, 0.5)
 
+# Define a function to load model weights if required
+def load_weights(model, model_weights_path):
+    model(1, tf.constant(10.0, tf.float32))  # Run once to initialize
+    with open(model_weights_path, 'rb') as f:
+        weights = pickle.load(f)
+    model.set_weights(weights)
+#directory to store BLER results 
+BLER = {}
+model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
+load_weights(model, model_weights_path)
+_, bler_conventional = sim_ber(model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000)
+BLER['autoencoder-NN'] = bler_conventional.numpy()
 
-# Run the BER simulation using `sim_ber`
-ber, bler = sim_ber(
-    # mc_fun=monte_carlo_fun,
-    ebno_dbs=ebno_dbs,
-    batch_size=BATCH_SIZE,
-    max_mc_iter=100,  # Maximum Monte Carlo iterations per SNR point
-    num_target_block_errors=100,  # Stop if 100 block errors are reached
-    soft_estimates=True
-)
-
-# Print results
-print("BER:", ber)
-print("BLER:", bler)
+# Save the BLER results to a file (optional)
+with open("bler_results.pkl", 'wb') as f:
+    pickle.dump((ebno_dbs, BLER), f)
