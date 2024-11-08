@@ -40,7 +40,7 @@ start_time = time.time()
 ###############################################
 # SNR range for evaluation and training [dB]
 ###############################################
-ebno_db_min = 6.0
+ebno_db_min = 4.0 #in sim it was 6
 ebno_db_max = 18.0
 
 ###############################################
@@ -197,7 +197,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 5000 #was used 30000
+NUM_TRAINING_ITERATIONS = 30000 #was used 30000
 
 # Set a seed for reproducibility
 tf.random.set_seed(1)
@@ -219,7 +219,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001)
 for i in range(NUM_TRAINING_ITERATIONS):
     # Forward pass
     with tf.GradientTape() as tape:
-        loss = model_train(BATCH_SIZE, 6.0)#6.0) #training SNR set to 6dB, get loss function for the most optimized under 6dB 
+        loss = model_train(BATCH_SIZE, 6.5)#6.0) #training SNR set to 6dB, get loss function for the most optimized under 6dB 
         #The model is assumed to return the BMD rate
     # Computing and applying gradients
     grads = tape.gradient(loss, model_train.trainable_weights)
@@ -265,7 +265,7 @@ def load_weights(model, model_weights_path):
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True)
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=10000,soft_estimates=True)
     #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
