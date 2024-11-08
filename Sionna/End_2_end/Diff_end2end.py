@@ -23,6 +23,8 @@ from sionna.utils.plotting import PlotBER
 
 from sionna.fec.ldpc.encoding import LDPC5GEncoder
 from sionna.fec.ldpc.decoding import LDPC5GDecoder
+from sionna.fec.interleaving import RandomInterleaver, Deinterleaver
+
 from sionna.mapping import Mapper, Demapper, Constellation
 
 sionna.config.seed = 42 # Set seed for reproducible random number generation
@@ -124,6 +126,8 @@ class End2EndSystem(Model): # Inherits from Keras Model
         super().__init__() # Must call the Keras model initializer
 
         self.constellation = Constellation("qam", num_bits_per_symbol, trainable=True)#, dtype = tf.complex64) # Constellation is trainable
+        self.interleaver = RandomInterleaver() 
+        self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
         self.mapper = Mapper(constellation=self.constellation)
         self.demapper = NeuralDemapper() # Intantiate the NeuralDemapper custom layer as any other
         self.binary_source = BinarySource() #draw random bits to decode 
@@ -157,10 +161,12 @@ class End2EndSystem(Model): # Inherits from Keras Model
         if self.training:
             bits = self.binary_source([batch_size,n]) # code generates the output as if they were already encoded
             #hence n - for codeword lenght 
+
         else: #not training mode
             uncoded_bits = self.binary_source([batch_size,k])# smaller number of inf bits, that are later fed to encoder 
             #that produces codeword of lenght n 
             bits = self.encoder(uncoded_bits)
+            bits = self.interleaver(bits)
         # Reshape bits to [batch_size, num_symbols_per_codeword, num_bits_per_symbol]
         # bits_reshaped = tf.reshape(bits, [batch_size, num_symbols_per_codeword, num_bits_per_symbol])
         #Map bits to symbols:
@@ -186,6 +192,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
             return loss
         else:
             #Decode llrs
+            llr = self.deinterlever(llr)
             decoded_bits = self.decoder(llr)
             return uncoded_bits, decoded_bits
         
@@ -197,7 +204,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 30000 #was used 30000
+NUM_TRAINING_ITERATIONS = 5000 #was used 30000
 
 # Set a seed for reproducibility
 tf.random.set_seed(1)
@@ -265,7 +272,7 @@ def load_weights(model, model_weights_path):
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=10000,soft_estimates=True)
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
