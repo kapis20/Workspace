@@ -6,7 +6,7 @@ import os
 import sionna
 
 import tensorflow as tf
-
+from tensorflow.keras import Model
 
 # Set the number of threads to the number of CPU cores
 num_cores = os.cpu_count()
@@ -65,7 +65,7 @@ results_baseline = {
 }
 #Dictionary to store constellation data 
 constellation_baseline = {}
-
+constellation_data_list = []
 
 ###############################
 # Baseline
@@ -97,10 +97,14 @@ class Baseline(Model): # Inherits from Keras Model
 
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
-        uncoded_bits = self.binary_source([batch_size, n]) 
+        uncoded_bits = self.binary_source([batch_size, k]) 
         bits = self.encoder(uncoded_bits)
         bits = self.interleaver(bits)
         x = self.mapper(bits)
+        # Store only constellation data after mapping
+        # Append ebno_db and constellation data as tuple to list
+        constellation_data_list.append((float(ebno_db), x))
+
         y = self.awgn_channel([x, no])
         llr = self.demapper([y,no])
         llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
@@ -123,13 +127,20 @@ results_baseline['ebno_dbs']['baseline'] = ebno_dbs
 
 #initialize model to run 
 model = Baseline()
-
+# After evaluation, convert list to dictionary
+constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=10, max_mc_iter=10,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
-results['BLER']['baseline'] = bler_NN.numpy()
-results['BER']['baseline'] = ber_NN.numpy()
+results_baseline['BLER']['baseline'] = bler_NN.numpy()
+results_baseline['BER']['baseline'] = ber_NN.numpy()
 
 # Save the results to a file (optional)
 with open("bler_results_baseline.pkl", 'wb') as f:
-    pickle.dump((results), f)
+    pickle.dump(results_baseline, f)
+
+
+
+# Save constellation data to a file
+with open("constellation_baseline.pkl", 'wb') as f:
+    pickle.dump(constellation_baseline, f)
