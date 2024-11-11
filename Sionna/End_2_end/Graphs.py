@@ -11,35 +11,39 @@ loss_file_path = "loss_values.pkl"
 ##############################################
 #PLot BER and BLER function
 ##############################################
-def plot_ber_bler(results_filename):
+def plot_ber_bler(results_filename,baseline_filename):
 # Load the data from the file
 
     with open(results_filename, 'rb') as f:
         results = pickle.load(f)
 
-    # # Check the structure of the loaded data
-    # print("Data structure:")
-    # print("ebno_dbs:", type(results['ebno_dbs']), results['ebno_dbs'])
-    # print("BLER:", type(results['BLER']), results['BLER'])
-    # print("BER:", type(results['BER']), results['BER'])
+    with open(baseline_filename, 'rb') as f:
+        baseline_results = pickle.load(f)
 
-    # Extract SNR values, BLER, and BER specifically for 'autoencoder-NN'
+    # Extract EB/No values, BLER, and BER specifically for 'autoencoder-NN'
     ebno_dbs = results['ebno_dbs']['autoencoder-NN']
     BLER = results['BLER']['autoencoder-NN']
     BER = results['BER']['autoencoder-NN']
+
+    ebno_dbs_baseline = baseline_results['ebno_dbs']['baseline']
+    BLER_baseline = baseline_results['BLER']['baseline']
+    BER_baseline = baseline_results['BER']['baseline']
 
     # Create a figure with two subplots, one for BER and one for BLER
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
     # Plot BER on the top subplot
-    ax1.semilogy(ebno_dbs, BER, 'x--', c='C1', label='BER - autoencoder-NN')
+     # Plot BER on the top subplot
+    ax1.semilogy(ebno_dbs_nn, BER_nn, 'x--', c='C1', label='BER - autoencoder-NN')
+    ax1.semilogy(ebno_dbs_baseline, BER_baseline, 'x--', c='C2', label='BER - Baseline')
     ax1.set_ylabel("BER")
     ax1.grid(which="both", linestyle='--', linewidth=0.5)
     ax1.legend()
     ax1.set_ylim((1e-4, 1.0))
 
     # Plot BLER on the bottom subplot
-    ax2.semilogy(ebno_dbs, BLER, 'o-', c='C0', label='BLER - autoencoder-NN')
+    ax2.semilogy(ebno_dbs_nn, BLER_nn, 'o-', c='C0', label='BLER - autoencoder-NN')
+    ax2.semilogy(ebno_dbs_baseline, BLER_baseline, 'o-', c='C3', label='BLER - Baseline')
     ax2.set_xlabel(r"$E_b/N_0$ (dB)")
     ax2.set_ylabel("BLER")
     ax2.grid(which="both", linestyle='--', linewidth=0.5)
@@ -48,9 +52,7 @@ def plot_ber_bler(results_filename):
 
     # Adjust layout to prevent overlap
     plt.tight_layout()
-    # Save the plot as an image file
-    plt.savefig("ber_bler_plot.png")
-    # Show the plot
+    plt.savefig("ber_bler_combined_plot.png")
     plt.show()
 
 
@@ -90,6 +92,26 @@ def plot_constellation(constellation_data_filename, stage="constellation_before"
     plt.show()
 
 
+def plot_constellation_baseline(baseline_constellation_filename):
+    # Load the baseline constellation data
+    with open(baseline_constellation_filename, "rb") as f:
+        constellation_baseline = pickle.load(f)
+
+    # Plot the baseline constellation
+    plt.figure(figsize=(6, 6))
+    for ebno, points in constellation_baseline.items():
+        real = points.real
+        imag = points.imag
+        plt.scatter(real, imag, label=f"Constellation at Eb/No = {ebno} dB")
+    
+    plt.xlabel("Real Part")
+    plt.ylabel("Imaginary Part")
+    plt.title("Baseline Constellation Plot")
+    plt.grid(True)
+    plt.legend()
+    plt.savefig("baseline_constellation_plot.png")
+    plt.show()
+
 ##################################################
 # Loss function plot 
 ##################################################
@@ -116,13 +138,16 @@ def plot_loss_function(loss_file_path,fig_file_path):
 #calling functions 
 ##################################################
 # Plot the BER and BLER results from "bler_results.pkl"
-plot_ber_bler("bler_results.pkl")
+plot_ber_bler("bler_results.pkl","bler_results_baseline.pkl")
 
 # Plot the constellation before training
 plot_constellation("constellation_data.pkl", stage="constellation_before", num_bits_per_symbol=6)
 
 # Plot the constellation after training
 plot_constellation("constellation_data.pkl", stage="constellation_after", num_bits_per_symbol=6)
+
+# Plot baseline constellation
+plot_constellation_baseline("constellation_baseline.pkl")
 
 #plot loss function:
 
