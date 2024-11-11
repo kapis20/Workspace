@@ -21,9 +21,9 @@ def plot_ber_bler(results_filename,baseline_filename):
         baseline_results = pickle.load(f)
 
     # Extract EB/No values, BLER, and BER specifically for 'autoencoder-NN'
-    ebno_dbs = results['ebno_dbs']['autoencoder-NN']
-    BLER = results['BLER']['autoencoder-NN']
-    BER = results['BER']['autoencoder-NN']
+    ebno_dbs_nn = results['ebno_dbs']['autoencoder-NN']
+    BLER_nn = results['BLER']['autoencoder-NN']
+    BER_nn = results['BER']['autoencoder-NN']
 
     ebno_dbs_baseline = baseline_results['ebno_dbs']['baseline']
     BLER_baseline = baseline_results['BLER']['baseline']
