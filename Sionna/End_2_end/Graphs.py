@@ -2,6 +2,12 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+#############################################
+# names of the files
+#############################################
+loss_file_path = "loss_values.pkl"
+
 ##############################################
 #PLot BER and BLER function
 ##############################################
@@ -84,6 +90,27 @@ def plot_constellation(constellation_data_filename, stage="constellation_before"
     plt.show()
 
 
+##################################################
+# Loss function plot 
+##################################################
+def plot_loss_function(loss_file_path,fig_file_path):
+    #read the loss values from the file:
+    with open(loss_file_path,"rb") as f:
+        loss_values = pickle.load(f)
+        #Plot the loss curve
+    plt.figure()    
+    plt.plot(loss_values)
+    plt.xlabel("Iterations")
+    plt.ylabel("Loss value")
+    plt.title("Loss Curve")
+    plt.grid("True")
+    plt.show()
+
+    #Save the plot:
+    plt.savefig(fig_file_path)
+
+
+
 
 ##################################################
 #calling functions 
@@ -96,3 +123,7 @@ plot_constellation("constellation_data.pkl", stage="constellation_before", num_b
 
 # Plot the constellation after training
 plot_constellation("constellation_data.pkl", stage="constellation_after", num_bits_per_symbol=6)
+
+#plot loss function:
+
+plot_loss_function("loss_values.pkl","loss_values_plot.pgn")

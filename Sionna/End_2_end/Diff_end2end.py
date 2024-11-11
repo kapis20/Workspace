@@ -79,6 +79,9 @@ constellation_data = {
     'constellation_after':{}
 }
 
+#Store loss function values, for evaluation 
+loss_values = []
+
 # # Dictionary to store the AWGN channel data before and after training
 # awgn_data = {
 #     "before_training": {},
@@ -226,8 +229,10 @@ optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001)
 for i in range(NUM_TRAINING_ITERATIONS):
     # Forward pass
     with tf.GradientTape() as tape:
-        loss = model_train(BATCH_SIZE, 6.5)#6.0) #training SNR set to 6dB, get loss function for the most optimized under 6dB 
+        loss = model_train(BATCH_SIZE, 6.5)#6.0) #training Eb/No set to 6dB, get loss function for the most optimized under 6dB 
         #The model is assumed to return the BMD rate
+        #store the current loss value 
+        loss_values.append(loss.numpy())
     # Computing and applying gradients
     grads = tape.gradient(loss, model_train.trainable_weights)
     optimizer.apply_gradients(zip(grads, model_train.trainable_weights))
@@ -251,7 +256,9 @@ weights = model_train.get_weights()
 with open(model_weights_path, 'wb') as f:
     pickle.dump(weights, f)
 
-
+# Save loss function values to a file
+with open("loss_values.pkl","wb") as f:
+    pickle.dump(loss_values,f)
 ##################################################
 #model evaluation 
 ##################################################
