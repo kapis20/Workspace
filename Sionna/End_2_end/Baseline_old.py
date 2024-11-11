@@ -28,7 +28,7 @@ from Functions import plot_ber_bler
 
 ###Parameters from the paper:###
 
-block_size = 4104 # in the paper used 4096 but it is not because num_bits_per_symbol does not give it if multipleid 4096/6 = 682.6
+block_size = 4098 # in the paper used 4096 but it is not because num_bits_per_symbol does not give it if multipleid 4096/6 = 682.6
 #block_size = 4096 #N, block size - codewords lenght - must be multiple of num_bits_per_symbol
 batch_size = 10 #number of codewords simulated in parallel 
 code_rate = 3/4 # LDPC code rate
