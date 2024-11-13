@@ -10,6 +10,7 @@ import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Layer, Dense
 
+
 # Set the number of threads to the number of CPU cores
 num_cores = os.cpu_count()
 tf.config.threading.set_intra_op_parallelism_threads(num_cores)
@@ -145,7 +146,8 @@ class End2EndSystem(Model): # Inherits from Keras Model
         # Instantiate the receive filter 
         self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
         # Instantiate a downsampling layer
-        self.ds = Downsampling(samples_per_symbol, self.m_rrcf.length-1, n)
+        self.ds = Downsampling(samples_per_symbol=4, offset=128, num_symbols=4098) #offset due to group delay
+        #self.ds = Downsampling(samples_per_symbol, 2*64, n) #self.m_rrcf.length, n) #offset set to 0 
 
         
         self.binary_source = BinarySource() #draw random bits to decode 
@@ -196,7 +198,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
         x_us = self.us(x) # upsampling 
 
         #Filter the upsampled sequence 
-        x_rrcf = self.rrcf(x_us)
+        x_rrcf = self.rrcf(x_us, padding = "same")
 
         ############################
         #Channel:
@@ -206,19 +208,38 @@ class End2EndSystem(Model): # Inherits from Keras Model
         ############################
         #matched filter, downsampling 
         ############################
-        y_mf = self.m_rrcf(y)
+        y_mf = self.m_rrcf(y,padding ="same")
 
         y_ds = self.ds(y_mf) #downsample sequence
+
+        # print("y_ds shape:",y_ds.shape)
         
-        tf.print("Shape of y:", tf.shape(y))
-        tf.print("Shape of y_mf after matched filtering:", tf.shape(y_mf))
-        tf.print("Shape of y_ds after downsampling:", tf.shape(y_ds))
+        ############################
+        #padding adding zeros at the end to match the lenght of sequence n
+         #Calculate the required padding amount to reach length n
+        # padding_amount = n - int(tf.shape(y_ds)[1])
+        padding_amount = n - tf.shape(y_ds)[1]
+
+        #create a 2x2 tensor of zeors 
+        tensor = tf.zeros((2,2),dtype = padding_amount.dtype)
+        #set the last element to the value of padding_amount
+        indices = [[1,1]]
+        updates = [padding_amount]
+        paddings = tf.tensor_scatter_nd_update(tensor,indices, updates)
+        #padding_amount = int(padding_amount.numpy())
+        # print("Padding amount is",padding_amount)
+        # Define the padding configuration: 
+        # paddings = tf.constant([[0,0],[0,padding_amount]])
+       
+        # Apply padding
+        y_ds_padded = tf.pad(y_ds, paddings,"CONSTANT")
+        
 
         ############################
         #Receiver
         ############################
         # Demapping 
-        llr = self.demapper(y_ds)  # Call the NeuralDemapper custom layer as any other
+        llr = self.demapper(y_ds_padded)  # Call the NeuralDemapper custom layer as any other
         llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         ############################
         #Loss or Output
@@ -262,9 +283,11 @@ optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001)
 
 # Training loop
 for i in range(NUM_TRAINING_ITERATIONS):
+
+   
     # Forward pass
     with tf.GradientTape() as tape:
-        loss = model_train(BATCH_SIZE, 6.5)#6.0) #training Eb/No set to 6dB, get loss function for the most optimized under 6dB 
+        loss = model_train(BATCH_SIZE, 0)#6.0) #training Eb/No set to 6dB, get loss function for the most optimized under 6dB 
         #The model is assumed to return the BMD rate
         #store the current loss value 
         loss_values.append(loss.numpy())

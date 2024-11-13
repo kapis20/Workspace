@@ -87,15 +87,35 @@ x_us = us(x)
 print("Shape of x_us", x_us.shape)
 
 # Filter the upsampled sequence
-x_rrcf = rrcf(x_us)
-
+x_rrcf = rrcf(x_us, padding = "same")
+print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
 # Apply the matched filter
-x_mf = rrcf(x_rrcf)
+x_mf = rrcf(x_rrcf, padding = "same")
 print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
 # Instantiate a downsampling layer
 ds = Downsampling(samples_per_symbol, rrcf.length-1, n)
-print("lenght is", rrcf.length-1)
+print("lenght is", rrcf.length)
 # Recover the transmitted symbol sequence
 x_hat = ds(x_mf)
 
-print("downsampled sequence is:",x_hat.shape)
+x_tensor = tf.constant(x_hat)
+#print("Tensor is ",x_tensor)
+# Apply padding
+padding_amount = tf.maximum(0, n - tf.shape(x_tensor)[2])
+paddings = tf.constant([[0,0],[0,n-int(tf.shape(x_tensor)[1])]])
+print("Padding  is",paddings)
+y_ds_padded = tf.pad(x_tensor, paddings,"CONSTANT")
+print("downsampled sequence is:",y_ds_padded.shape)
+
+
+# Visualize the different signals
+plt.figure(figsize=(12, 8))
+plt.plot(np.real(x_us[0]), "x")
+plt.plot(np.real(x_rrcf[0, rrcf.length//2:]))
+plt.plot(np.real(x_mf[0,1]));
+plt.xlim(0,100)
+plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
+            r"Transmitted sequence after pulse shaping $x_{rrcf}$",
+            r"Received sequence after matched filtering $x_{mf}$"]);
+
+plt.show()
