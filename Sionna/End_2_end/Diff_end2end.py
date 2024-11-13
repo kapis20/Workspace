@@ -21,6 +21,8 @@ from sionna.utils import BinarySource, ebnodb2no, log10, expand_to_rank, insert_
 from sionna.utils import sim_ber
 from sionna.utils.plotting import PlotBER
 
+from sionna.signal import Upsampling, Downsampling, RootRaisedCosineFilter, empirical_psd, empirical_aclr
+
 from sionna.fec.ldpc.encoding import LDPC5GEncoder
 from sionna.fec.ldpc.decoding import LDPC5GDecoder
 from sionna.fec.interleaving import RandomInterleaver, Deinterleaver
@@ -55,9 +57,11 @@ n = 4098 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_s
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
+#filter
+beta = 0.3 # Roll-off factor
+span_in_symbols = 32 # Filter span in symbold
+samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling factor
 
-#batch size = 10 
-#Other parametes:
 
 BATCH_SIZE = 10#10 #how many examples are processed by sionna in parallel 
 
@@ -133,6 +137,17 @@ class End2EndSystem(Model): # Inherits from Keras Model
         self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
         self.mapper = Mapper(constellation=self.constellation)
         self.demapper = NeuralDemapper() # Intantiate the NeuralDemapper custom layer as any other
+
+        # Create instance of the Upsampling layer
+        self.us = Upsampling(samples_per_symbol)
+        #initialize the transmit filtrer 
+        self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta, trainable = True)
+        # Instantiate the receive filter 
+        self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
+        # Instantiate a downsampling layer
+        self.ds = Downsampling(samples_per_symbol, self.m_rrcf.length-1, n)
+
+        
         self.binary_source = BinarySource() #draw random bits to decode 
         self.awgn_channel = AWGN() #initialize awgn channel 
         self.bce = tf.keras.losses.BinaryCrossentropy(from_logits=True) # Loss function
@@ -174,16 +189,36 @@ class End2EndSystem(Model): # Inherits from Keras Model
         # bits_reshaped = tf.reshape(bits, [batch_size, num_symbols_per_codeword, num_bits_per_symbol])
         #Map bits to symbols:
         x = self.mapper(bits) #symbols 
+
+        ############################
+        #Filter and sampling
+        ############################
+        x_us = self.us(x) # upsampling 
+
+        #Filter the upsampled sequence 
+        x_rrcf = self.rrcf(x_us)
+
         ############################
         #Channel:
         ############################
-        y = self.awgn_channel([x, no]) #passed symbols to the channel together with noise variance 
+        y = self.awgn_channel([x_rrcf, no]) #passed symbols to the channel together with noise variance 
+
+        ############################
+        #matched filter, downsampling 
+        ############################
+        y_mf = self.m_rrcf(y)
+
+        y_ds = self.ds(y_mf) #downsample sequence
+        
+        tf.print("Shape of y:", tf.shape(y))
+        tf.print("Shape of y_mf after matched filtering:", tf.shape(y_mf))
+        tf.print("Shape of y_ds after downsampling:", tf.shape(y_ds))
 
         ############################
         #Receiver
         ############################
         # Demapping 
-        llr = self.demapper(y)  # Call the NeuralDemapper custom layer as any other
+        llr = self.demapper(y_ds)  # Call the NeuralDemapper custom layer as any other
         llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         ############################
         #Loss or Output
@@ -207,7 +242,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 5000 #was used 30000
+NUM_TRAINING_ITERATIONS = 100 #was used 30000
 
 # Set a seed for reproducibility
 tf.random.set_seed(1)
@@ -279,7 +314,7 @@ def load_weights(model, model_weights_path):
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=10, max_mc_iter=10,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()

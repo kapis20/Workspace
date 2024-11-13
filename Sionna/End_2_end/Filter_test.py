@@ -1,0 +1,101 @@
+################################################
+#necessary imports:
+################################################
+import time # to monitor time execution of model
+import os
+import sionna
+
+import tensorflow as tf
+
+from tensorflow.keras import Model
+from tensorflow.keras.layers import Layer, Dense
+
+# Set the number of threads to the number of CPU cores
+num_cores = os.cpu_count()
+tf.config.threading.set_intra_op_parallelism_threads(num_cores)
+tf.config.threading.set_inter_op_parallelism_threads(num_cores)
+
+from sionna.channel import AWGN
+
+from sionna.utils import BinarySource, ebnodb2no, log10, expand_to_rank, insert_dims
+from sionna.utils import sim_ber
+from sionna.utils.plotting import PlotBER
+
+from sionna.signal import Upsampling, Downsampling, RootRaisedCosineFilter, empirical_psd, empirical_aclr
+from sionna.utils import QAMSource
+
+from sionna.fec.ldpc.encoding import LDPC5GEncoder
+from sionna.fec.ldpc.decoding import LDPC5GDecoder
+from sionna.fec.interleaving import RandomInterleaver, Deinterleaver
+
+
+from sionna.mapping import Mapper, Demapper, Constellation
+
+sionna.config.seed = 42 # Set seed for reproducible random number generation
+
+
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')  # Alternatively, try 'Agg' if you're not displaying the plot
+import numpy as np
+import pickle
+
+# Initialize timing for entire script
+start_time = time.time()
+
+###############################################
+# SNR range for evaluation and training [dB]
+###############################################
+ebno_db_min = 4.0 #in sim it was 6
+ebno_db_max = 18.0
+
+###############################################
+# Modulation and coding configuration
+###############################################
+num_bits_per_symbol = 6 # Baseline is 64-QAM
+modulation_order = 2**num_bits_per_symbol
+coderate = 0.75 #0.75 # Coderate for the outer code
+n = 4098 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
+num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
+k = int(n*coderate) # Number of information bits per codeword
+num_iter = 50 #number of BP iterations 
+#filter
+beta = 0.3 # Roll-off factor
+span_in_symbols = 32 # Filter span in symbold
+samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling factor
+
+
+BATCH_SIZE = 10#10 #how many examples are processed by sionna in parallel 
+rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
+rrcf.show("impulse")
+rrcf.show("magnitude", "db") # Logarithmic scale
+rrcf.show("magnitude", "lin") # Linear scale
+
+
+qam = QAMSource(num_bits_per_symbol) # Layer to generate batches of QAM symbols
+
+
+x = qam([BATCH_SIZE, n])
+
+print("Shape of x", x.shape)
+
+# Create instance of the Upsampling layer
+us = Upsampling(samples_per_symbol)
+
+# Upsample the QAM symbol sequence
+x_us = us(x)
+print("Shape of x_us", x_us.shape)
+
+# Filter the upsampled sequence
+x_rrcf = rrcf(x_us)
+
+# Apply the matched filter
+x_mf = rrcf(x_rrcf)
+print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
+# Instantiate a downsampling layer
+ds = Downsampling(samples_per_symbol, rrcf.length-1, n)
+print("lenght is", rrcf.length-1)
+# Recover the transmitted symbol sequence
+x_hat = ds(x_mf)
+
+print("downsampled sequence is:",x_hat.shape)
