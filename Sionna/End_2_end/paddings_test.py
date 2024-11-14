@@ -4,7 +4,7 @@ import tensorflow as tf
 t = tf.constant([[1, 2, 3], [4, 5, 6]])
 print(t)
 
-paddings = tf.constant([[0,0],[0,2]]) 
+paddings = tf.constant([[0,0],[0,192]])
 #first corresponds to rows dimension and by [0 0 ] we say that we want nothing added before the starting row and after
 #secodn corresponds to columns dimension an we say 0 before each sequence but two 0s at the end of each sequence 
 print("Paddings is ",paddings)

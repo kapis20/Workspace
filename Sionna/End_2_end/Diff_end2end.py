@@ -39,6 +39,9 @@ matplotlib.use('TkAgg')  # Alternatively, try 'Agg' if you're not displaying the
 import numpy as np
 import pickle
 
+#Custom functions:
+from Padding_utils import PaddingFunction
+
 # Initialize timing for entire script
 start_time = time.time()
 
@@ -94,6 +97,7 @@ loss_values = []
 # } Perhaps something to look into the future 
 
 
+    
 ###############################################
 #Cystom layers - Demapper 
 ###############################################
@@ -212,34 +216,18 @@ class End2EndSystem(Model): # Inherits from Keras Model
 
         y_ds = self.ds(y_mf) #downsample sequence
 
-        # print("y_ds shape:",y_ds.shape)
         
-        ############################
-        #padding adding zeros at the end to match the lenght of sequence n
-         #Calculate the required padding amount to reach length n
-        # padding_amount = n - int(tf.shape(y_ds)[1])
-        padding_amount = n - tf.shape(y_ds)[1]
-
-        #create a 2x2 tensor of zeors 
-        tensor = tf.zeros((2,2),dtype = padding_amount.dtype)
-        #set the last element to the value of padding_amount
-        indices = [[1,1]]
-        updates = [padding_amount]
-        paddings = tf.tensor_scatter_nd_update(tensor,indices, updates)
-        #padding_amount = int(padding_amount.numpy())
-        # print("Padding amount is",padding_amount)
-        # Define the padding configuration: 
-        # paddings = tf.constant([[0,0],[0,padding_amount]])
+        #paddings = tf.constant([[0,0],[0,192]])
        
         # Apply padding
-        y_ds_padded = tf.pad(y_ds, paddings,"CONSTANT")
+        y_ds_padded = PaddingFunction(y_ds,n)
         
 
         ############################
         #Receiver
         ############################
         # Demapping 
-        llr = self.demapper(y_ds_padded)  # Call the NeuralDemapper custom layer as any other
+        llr = self.demapper(y_ds)  # Call the NeuralDemapper custom layer as any other
         llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         ############################
         #Loss or Output
