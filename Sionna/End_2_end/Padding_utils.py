@@ -5,10 +5,14 @@ import numpy
 #Padding function
 ###############################################
 def PaddingFunction(tensor,target_length):
-    #Calculate the padding ammout:
-    Padding_amount = target_length -tf.shape(tensor)[1]
-    Padding_amount = int(Padding_amount.numpy())
-    padding = tf.constant([[0,0]],[0,Padding_amount])
-    padded_tensor = tf.pad(tensor,padding,"CONSTANT")
+    # Calculate the padding amount as a tensor
+    padding_amount = tf.maximum(0, target_length - tf.shape(tensor)[1])
+
+    # Create the padding configuration using the padding amount tensor
+    paddings = [[0, 0], [0, padding_amount]]
+
+    # Apply padding
+    padded_tensor = tf.pad(tensor, paddings, mode="CONSTANT")
+    padded_tensor = tf.ensure_shape(padded_tensor, [None, target_length])  # Ensures the second dimension is target_length
     
     return padded_tensor

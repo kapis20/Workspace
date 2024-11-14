@@ -150,7 +150,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
         # Instantiate the receive filter 
         self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
         # Instantiate a downsampling layer
-        self.ds = Downsampling(samples_per_symbol=4, offset=128, num_symbols=4098) #offset due to group delay
+        self.ds = Downsampling(samples_per_symbol=4, offset=0, num_symbols=4098) #offset due to group delay
         #self.ds = Downsampling(samples_per_symbol, 2*64, n) #self.m_rrcf.length, n) #offset set to 0 
 
         
@@ -220,7 +220,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
         #paddings = tf.constant([[0,0],[0,192]])
        
         # Apply padding
-        y_ds_padded = PaddingFunction(y_ds,n)
+        #y_ds_padded = PaddingFunction(y_ds,n)
         
 
         ############################
@@ -228,7 +228,8 @@ class End2EndSystem(Model): # Inherits from Keras Model
         ############################
         # Demapping 
         llr = self.demapper(y_ds)  # Call the NeuralDemapper custom layer as any other
-        llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
+        # llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
+        
         ############################
         #Loss or Output
         ############################
