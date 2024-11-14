@@ -228,7 +228,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
         ############################
         # Demapping 
         llr = self.demapper(y_ds)  # Call the NeuralDemapper custom layer as any other
-        # llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
+        llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         
         ############################
         #Loss or Output
