@@ -36,6 +36,7 @@ def plot_ber_bler(results_filename,baseline_filename):
      # Plot BER on the top subplot
     ax1.semilogy(ebno_dbs_nn, BER_nn, 'x--', c='C1', label='BER - autoencoder-NN')
     ax1.semilogy(ebno_dbs_baseline, BER_baseline, 'x--', c='C2', label='BER - Baseline')
+    ax1.axvline(10.2, color='red', linestyle='--', label="Shannon's Band")
     ax1.set_ylabel("BER")
     ax1.grid(which="both", linestyle='--', linewidth=0.5)
     ax1.legend()
@@ -44,6 +45,7 @@ def plot_ber_bler(results_filename,baseline_filename):
     # Plot BLER on the bottom subplot
     ax2.semilogy(ebno_dbs_nn, BLER_nn, 'o-', c='C0', label='BLER - autoencoder-NN')
     ax2.semilogy(ebno_dbs_baseline, BLER_baseline, 'o-', c='C3', label='BLER - Baseline')
+    ax2.axvline(10.2, color='red', linestyle='--', label="Shannon's Band")
     ax2.set_xlabel(r"$E_b/N_0$ (dB)")
     ax2.set_ylabel("BLER")
     ax2.grid(which="both", linestyle='--', linewidth=0.5)
@@ -177,7 +179,7 @@ def plot_loss_function(loss_file_path,fig_file_path):
 #calling functions 
 ##################################################
 # Plot the BER and BLER results from "bler_results.pkl"
-#plot_ber_bler("bler_results.pkl","bler_results_baseline.pkl")
+plot_ber_bler("bler_results.pkl","bler_results_baseline.pkl")
 plot_ber_bler_NN("bler_results.pkl")
 
 # Plot the constellation before training
