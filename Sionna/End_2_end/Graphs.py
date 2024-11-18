@@ -62,7 +62,7 @@ def plot_ber_bler_NN(results_filename):
 
    
 
-        # Extract SNR values, BLER, and BER specifically for 'autoencoder-NN'
+        # Extract eb/no values, BLER, and BER specifically for 'autoencoder-NN'
         ebno_dbs = results['ebno_dbs']['autoencoder-NN']
         BLER = results['BLER']['autoencoder-NN']
         BER = results['BER']['autoencoder-NN']
@@ -72,6 +72,7 @@ def plot_ber_bler_NN(results_filename):
 
         # Plot BER on the top subplot
         ax1.semilogy(ebno_dbs, BER, 'x--', c='C1', label='BER - autoencoder-NN')
+        ax1.axvline(10.2, color='red', linestyle='--', label="Shannon's Band")
         ax1.set_ylabel("BER")
         ax1.grid(which="both", linestyle='--', linewidth=0.5)
         ax1.legend()
@@ -80,6 +81,7 @@ def plot_ber_bler_NN(results_filename):
         # Plot BLER on the bottom subplot
         ax2.semilogy(ebno_dbs, BLER, 'o-', c='C0', label='BLER - autoencoder-NN')
         ax2.set_xlabel(r"$E_b/N_0$ (dB)")
+        ax2.axvline(10.2, color='red', linestyle='--', label="Shannon's Band")
         ax2.set_ylabel("BLER")
         ax2.grid(which="both", linestyle='--', linewidth=0.5)
         ax2.legend()
@@ -162,10 +164,11 @@ def plot_loss_function(loss_file_path,fig_file_path):
     plt.ylabel("Loss value")
     plt.title("Loss Curve")
     plt.grid("True")
+     #Save the plot:
+    plt.savefig(fig_file_path)
     plt.show()
 
-    #Save the plot:
-    plt.savefig(fig_file_path)
+   
 
 
 
@@ -174,7 +177,7 @@ def plot_loss_function(loss_file_path,fig_file_path):
 #calling functions 
 ##################################################
 # Plot the BER and BLER results from "bler_results.pkl"
-plot_ber_bler("bler_results.pkl","bler_results_baseline.pkl")
+#plot_ber_bler("bler_results.pkl","bler_results_baseline.pkl")
 plot_ber_bler_NN("bler_results.pkl")
 
 # Plot the constellation before training
@@ -184,8 +187,8 @@ plot_constellation("constellation_data.pkl", stage="constellation_before", num_b
 plot_constellation("constellation_data.pkl", stage="constellation_after", num_bits_per_symbol=6)
 
 # Plot baseline constellation
-plot_constellation_baseline("constellation_baseline.pkl")
+#plot_constellation_baseline("constellation_baseline.pkl")
 
 #plot loss function:
 
-plot_loss_function("loss_values.pkl","loss_values_plot.pgn")
+plot_loss_function("loss_values.pkl","loss_values_plot.png")
