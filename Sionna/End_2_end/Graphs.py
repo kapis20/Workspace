@@ -179,7 +179,7 @@ def plot_loss_function(loss_file_path,fig_file_path):
 #calling functions 
 ##################################################
 # Plot the BER and BLER results from "bler_results.pkl"
-plot_ber_bler("bler_results.pkl","bler_results_baseline.pkl")
+#plot_ber_bler("bler_results.pkl","bler_results_baseline.pkl")
 plot_ber_bler_NN("bler_results.pkl")
 
 # Plot the constellation before training
