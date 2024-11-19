@@ -21,7 +21,7 @@ from sionna.utils import BinarySource, ebnodb2no, log10, expand_to_rank, insert_
 from sionna.utils import sim_ber
 from sionna.utils.plotting import PlotBER
 
-from sionna.signal import Upsampling, Downsampling, RootRaisedCosineFilter, empirical_psd, empirical_aclr
+from sionna.signal import Upsampling, Downsampling, RootRaisedCosineFilter, empirical_psd, empirical_aclr, HammingWindow
 from sionna.utils import QAMSource
 
 from sionna.fec.ldpc.encoding import LDPC5GEncoder
@@ -60,13 +60,13 @@ num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
 #filter
-beta = 0.3 # Roll-off factor
+beta = 0.7 # Roll-off factor
 span_in_symbols = 32 # Filter span in symbold
 samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling factor
 
 
 BATCH_SIZE = 10#10 #how many examples are processed by sionna in parallel 
-rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
+rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta, window ="blackman" )
 rrcf.show("impulse")
 rrcf.show("magnitude", "db") # Logarithmic scale
 rrcf.show("magnitude", "lin") # Linear scale
@@ -87,35 +87,43 @@ x_us = us(x)
 print("Shape of x_us", x_us.shape)
 
 # Filter the upsampled sequence
-x_rrcf = rrcf(x_us, padding = "same")
+x_rrcf = rrcf(x_us)#, padding = "same")
 print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
 # Apply the matched filter
-x_mf = rrcf(x_rrcf, padding = "same")
+x_mf = rrcf(x_rrcf)#, padding = "same")
 print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
 # Instantiate a downsampling layer
 ds = Downsampling(samples_per_symbol, rrcf.length-1, n)
 print("lenght is", rrcf.length)
 # Recover the transmitted symbol sequence
 x_hat = ds(x_mf)
+print("shape of received signal",x_hat.shape)
+# x_tensor = tf.constant(x_hat)
+# #print("Tensor is ",x_tensor)
+# # Apply padding
+# padding_amount = tf.maximum(0, n - tf.shape(x_tensor)[2])
+# paddings = tf.constant([[0,0],[0,n-int(tf.shape(x_tensor)[1])]])
+# print("Padding  is",paddings)
+# y_ds_padded = tf.pad(x_tensor, paddings,"CONSTANT")
+# print("downsampled sequence is:",y_ds_padded.shape)
 
-x_tensor = tf.constant(x_hat)
-#print("Tensor is ",x_tensor)
-# Apply padding
-padding_amount = tf.maximum(0, n - tf.shape(x_tensor)[2])
-paddings = tf.constant([[0,0],[0,n-int(tf.shape(x_tensor)[1])]])
-print("Padding  is",paddings)
-y_ds_padded = tf.pad(x_tensor, paddings,"CONSTANT")
-print("downsampled sequence is:",y_ds_padded.shape)
 
-
-# Visualize the different signals
-plt.figure(figsize=(12, 8))
-plt.plot(np.real(x_us[0]), "x")
-plt.plot(np.real(x_rrcf[0, rrcf.length//2:]))
-plt.plot(np.real(x_mf[0,1]));
-plt.xlim(0,100)
-plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
-            r"Transmitted sequence after pulse shaping $x_{rrcf}$",
-            r"Received sequence after matched filtering $x_{mf}$"]);
-
+plt.figure()
+plt.scatter(np.real(x_hat), np.imag(x_hat));
+plt.scatter(np.real(x), np.imag(x));
+plt.legend(["Transmitted", "Received"]);
+plt.title("Scatter plot of the transmitted and received QAM symbols")
+print("MSE between x and x_hat (dB)", 10*np.log10(np.var(x-x_hat)))
 plt.show()
+
+# # Visualize the different signals
+# plt.figure(figsize=(12, 8))
+# plt.plot(np.real(x_us[0]), "x")
+# plt.plot(np.real(x_rrcf[0, rrcf.length//2:]))
+# plt.plot(np.real(x_mf[0,1]));
+# plt.xlim(0,100)
+# plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
+#             r"Transmitted sequence after pulse shaping $x_{rrcf}$",
+#             r"Received sequence after matched filtering $x_{mf}$"]);
+
+# plt.show()

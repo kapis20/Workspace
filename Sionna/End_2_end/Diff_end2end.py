@@ -146,11 +146,11 @@ class End2EndSystem(Model): # Inherits from Keras Model
         # Create instance of the Upsampling layer
         self.us = Upsampling(samples_per_symbol)
         #initialize the transmit filtrer 
-        self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta, trainable = True)
+        self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta, trainable = True)#, window ="blackman")
         # Instantiate the receive filter 
-        self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
+        self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)#, window = "blackman")
         # Instantiate a downsampling layer
-        self.ds = Downsampling(samples_per_symbol=4, offset=0, num_symbols=4098) #offset due to group delay
+        self.ds = Downsampling(samples_per_symbol, self.rrcf.length-1, n) #offset due to group delay
         #self.ds = Downsampling(samples_per_symbol, 2*64, n) #self.m_rrcf.length, n) #offset set to 0 
 
         
@@ -202,7 +202,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
         x_us = self.us(x) # upsampling 
 
         #Filter the upsampled sequence 
-        x_rrcf = self.rrcf(x_us, padding = "same")
+        x_rrcf = self.rrcf(x_us)#, padding = "same")
 
         ############################
         #Channel:
@@ -213,7 +213,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
         #matched filter, downsampling 
         ############################
         y_mf = self.m_rrcf(y,padding ="same")
-
+        #y_mf = self.rrcf(y)
         y_ds = self.ds(y_mf) #downsample sequence
 
         
@@ -252,7 +252,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 30000 #was used 30000
+NUM_TRAINING_ITERATIONS = 1 #was used 30000
 
 # Set a seed for reproducibility
 tf.random.set_seed(1)
@@ -326,7 +326,7 @@ def load_weights(model, model_weights_path):
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=10000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
