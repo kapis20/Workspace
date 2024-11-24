@@ -23,6 +23,8 @@ from sionna.fec.ldpc.encoding import LDPC5GEncoder
 from sionna.fec.ldpc.decoding import LDPC5GDecoder
 from sionna.fec.interleaving import RandomInterleaver, Deinterleaver
 
+from sionna.signal import Upsampling, Downsampling, RootRaisedCosineFilter, empirical_psd, empirical_aclr
+
 from sionna.mapping import Mapper, Demapper, Constellation
 
 sionna.config.seed = 42 # Set seed for reproducible random number generation
@@ -51,7 +53,10 @@ n = 4098 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_s
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
-
+#filter
+beta = 0.3 # Roll-off factor
+span_in_symbols = 32 # Filter span in symbold
+samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling factor
 #batch size = 10 
 #Other parametes:
 
@@ -81,6 +86,14 @@ class Baseline(Model): # Inherits from Keras Model
         self.interleaver = RandomInterleaver() 
         self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
         self.mapper = Mapper(constellation=self.constellation)
+             # Create instance of the Upsampling layer
+        self.us = Upsampling(samples_per_symbol)
+        #initialize the transmit filtrer 
+        self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
+        #self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
+        # Instantiate a downsampling layer
+        self.ds = Downsampling(samples_per_symbol, self.rrcf.length-1, n) #offset due to group delay
+
         self.demapper = Demapper("app", constellation=self.constellation)
         self.binary_source = BinarySource()
         self.awgn_channel = AWGN()
@@ -101,13 +114,29 @@ class Baseline(Model): # Inherits from Keras Model
         bits = self.encoder(uncoded_bits)
         bits = self.interleaver(bits)
         x = self.mapper(bits)
+        ############################
+        #Filter and sampling
+        ############################
+        x_us = self.us(x) # upsampling 
+
+        #Filter the upsampled sequence 
+        x_rrcf = self.rrcf(x_us)
+
+        
         # Store only constellation data after mapping
         # Append ebno_db and constellation data as tuple to list
-        constellation_data_list.append((float(ebno_db), x))
+        # constellation_data_list.append((float(ebno_db), x))
 
-        y = self.awgn_channel([x, no])
-        llr = self.demapper([y,no])
-        llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
+        y = self.awgn_channel([x_rrcf, no])
+
+        #matched filter, downsampling 
+        ############################
+        y_mf = self.rrcf(y, padding = "full")
+        #y_mf = self.rrcf(y)
+        y_ds = self.ds(y_mf) #downsample sequence
+
+        llr = self.demapper([y_ds,no])
+        #llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr = self.deinterlever(llr)
         decoded_bits = self.decoder(llr)
         return uncoded_bits, decoded_bits
@@ -128,7 +157,7 @@ results_baseline['ebno_dbs']['baseline'] = ebno_dbs
 #initialize model to run 
 model = Baseline()
 # After evaluation, convert list to dictionary
-constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
+#constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
@@ -141,6 +170,6 @@ with open("bler_results_baseline.pkl", 'wb') as f:
 
 
 
-# Save constellation data to a file
-with open("constellation_baseline.pkl", 'wb') as f:
-    pickle.dump(constellation_baseline, f)
+# # Save constellation data to a file
+# with open("constellation_baseline.pkl", 'wb') as f:
+#     pickle.dump(constellation_baseline, f)

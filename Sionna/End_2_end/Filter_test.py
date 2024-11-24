@@ -60,7 +60,7 @@ num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
 #filter
-beta = 0.7 # Roll-off factor
+beta = 0.25 # Roll-off factor
 span_in_symbols = 32 # Filter span in symbold
 samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling factor
 
@@ -87,10 +87,10 @@ x_us = us(x)
 print("Shape of x_us", x_us.shape)
 
 # Filter the upsampled sequence
-x_rrcf = rrcf(x_us)#, padding = "same")
+x_rrcf = rrcf(x_us)#, padding = "full")
 print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
 # Apply the matched filter
-x_mf = rrcf(x_rrcf)#, padding = "same")
+x_mf = rrcf(x_rrcf, padding = "full")
 print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
 # Instantiate a downsampling layer
 ds = Downsampling(samples_per_symbol, rrcf.length-1, n)
@@ -116,14 +116,14 @@ plt.title("Scatter plot of the transmitted and received QAM symbols")
 print("MSE between x and x_hat (dB)", 10*np.log10(np.var(x-x_hat)))
 plt.show()
 
-# # Visualize the different signals
-# plt.figure(figsize=(12, 8))
-# plt.plot(np.real(x_us[0]), "x")
-# plt.plot(np.real(x_rrcf[0, rrcf.length//2:]))
-# plt.plot(np.real(x_mf[0,1]));
-# plt.xlim(0,100)
-# plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
-#             r"Transmitted sequence after pulse shaping $x_{rrcf}$",
-#             r"Received sequence after matched filtering $x_{mf}$"]);
+# Visualize the different signals
+plt.figure(figsize=(12, 8))
+plt.plot(np.real(x_us[0]), "x")
+plt.plot(np.real(x_rrcf[0, rrcf.length//2:]))
+plt.plot(np.real(x_mf[0,rrcf.length -1:]));
+plt.xlim(0,100)
+plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
+            r"Transmitted sequence after pulse shaping $x_{rrcf}$",
+            r"Received sequence after matched filtering $x_{mf}$"]);
 
-# plt.show()
+plt.show()
