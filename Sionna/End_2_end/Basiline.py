@@ -27,7 +27,7 @@ from sionna.signal import Upsampling, Downsampling, RootRaisedCosineFilter, empi
 
 from sionna.mapping import Mapper, Demapper, Constellation
 
-sionna.config.seed = 42 # Set seed for reproducible random number generation
+#sionna.config.seed = 42 # Set seed for reproducible random number generation
 
 
 import matplotlib.pyplot as plt
@@ -47,9 +47,9 @@ ebno_db_max = 18.0
 # Modulation and coding configuration
 ###############################################
 num_bits_per_symbol = 6 # Baseline is 64-QAM
-modulation_order = 2**num_bits_per_symbol
+#modulation_order = 2**num_bits_per_symbol
 coderate = 0.75 #0.75 # Coderate for the outer code
-n = 4098 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
+n = 4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
@@ -81,36 +81,58 @@ class Baseline(Model): # Inherits from Keras Model
     def __init__(self):
 
         super().__init__() # Must call the Keras model initializer
-
-        self.constellation = Constellation("qam", num_bits_per_symbol)
+        ########################################
+        # Transmitter:
+        ########################################
+        self.binary_source = BinarySource()
+        self.encoder = LDPC5GEncoder(k,n, num_bits_per_symbol) #pass no of info bits and lenght of the codeword, and bits per symbol
         self.interleaver = RandomInterleaver() 
-        self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
+        self.constellation = Constellation("qam", num_bits_per_symbol)
         self.mapper = Mapper(constellation=self.constellation)
-             # Create instance of the Upsampling layer
+
+        ########################################
+        # Filters
+        ########################################
+        # Create instance of the Upsampling layer
         self.us = Upsampling(samples_per_symbol)
         #initialize the transmit filtrer 
         self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
-        #self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
         # Instantiate a downsampling layer
         self.ds = Downsampling(samples_per_symbol, self.rrcf.length-1, n) #offset due to group delay
 
-        self.demapper = Demapper("app", constellation=self.constellation)
-        self.binary_source = BinarySource()
+        ########################################
+        # Channel 
+        ########################################
         self.awgn_channel = AWGN()
-        self.encoder = LDPC5GEncoder(k,n, num_bits_per_symbol) #pass no of info bits and lenght of the codeword, and bits per symbol
+
+        ########################################
+        # Receiver 
+        ########################################
+        self.demapper = Demapper("app", constellation=self.constellation)
+        self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
+        #self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)    
         self.decoder = LDPC5GDecoder(
                 encoder=self.encoder,       # Pass encoder instance
                 cn_type="boxplus-phi",      # Use stable, numerical single parity check function
-                hard_out=False,             # Use soft-output decoding
+                hard_out= False,             # Use soft-output decoding
                 num_iter=num_iter           # Number of BP iterations
     )
 
     @tf.function # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
+        # # If `ebno_db` is a scalar, a tensor with shape [batch size] is created as it is what is expected by some layers
+        # if len(ebno_db.shape) == 0:
+        #     ebno_db = tf.fill([batch_size], ebno_db)
+        # no = ebnodb2no(ebno_db, num_bits_per_symbol, coderate)
+        # no = expand_to_rank(no, 2)
 
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
         uncoded_bits = self.binary_source([batch_size, k]) 
+        #############################
+        # Transmit
+        #############################
+
         bits = self.encoder(uncoded_bits)
         bits = self.interleaver(bits)
         x = self.mapper(bits)
@@ -126,19 +148,28 @@ class Baseline(Model): # Inherits from Keras Model
         # Store only constellation data after mapping
         # Append ebno_db and constellation data as tuple to list
         # constellation_data_list.append((float(ebno_db), x))
-
+        ##############################
+        # Channel 
+        ##############################
         y = self.awgn_channel([x_rrcf, no])
-
+        ############################
         #matched filter, downsampling 
         ############################
         y_mf = self.rrcf(y, padding = "full")
         #y_mf = self.rrcf(y)
         y_ds = self.ds(y_mf) #downsample sequence
-
-        llr = self.demapper([y_ds,no])
-        #llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
-        llr = self.deinterlever(llr)
-        decoded_bits = self.decoder(llr)
+        ############################
+        # Receive 
+        ############################
+        llr_ch = self.demapper([y_ds,no])
+        #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
+        llr_de = self.deinterlever(llr_ch)
+        tf.print("Shape after mapper:", tf.shape(x))
+        tf.print("Shape after upsampling:", tf.shape(x_us))
+        tf.print("Shape after filtering:", tf.shape(x_rrcf))
+        tf.print("Shape after downsampling:", tf.shape(y_ds))
+        llr_de = tf.reshape(llr_de, [batch_size, n])
+        decoded_bits = self.decoder(llr_de)
         return uncoded_bits, decoded_bits
 
 
