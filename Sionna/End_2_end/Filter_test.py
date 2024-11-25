@@ -93,7 +93,7 @@ print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
 x_mf = rrcf(x_rrcf, padding = "full")
 print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
 # Instantiate a downsampling layer
-ds = Downsampling(samples_per_symbol, rrcf.length-1, n)
+ds = Downsampling(samples_per_symbol, rrcf.length-1, num_symbols_per_codeword)
 print("lenght is", rrcf.length)
 # Recover the transmitted symbol sequence
 x_hat = ds(x_mf)
