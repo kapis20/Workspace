@@ -57,7 +57,7 @@ ebno_db_max = 18.0
 num_bits_per_symbol = 6 # Baseline is 64-QAM
 modulation_order = 2**num_bits_per_symbol
 coderate = 0.75 #0.75 # Coderate for the outer code
-n = 4098 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
+n = 4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
@@ -136,43 +136,66 @@ class End2EndSystem(Model): # Inherits from Keras Model
     def __init__(self, training):
 
         super().__init__() # Must call the Keras model initializer
-
+        #####################################
+        # Transmit (trainable components):
+        #####################################
+        self.binary_source = BinarySource() #draw random bits to decode 
+        
         self.constellation = Constellation("qam", num_bits_per_symbol, trainable=True)#, dtype = tf.complex64) # Constellation is trainable
-        self.interleaver = RandomInterleaver() 
-        self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
         self.mapper = Mapper(constellation=self.constellation)
-        self.demapper = NeuralDemapper() # Intantiate the NeuralDemapper custom layer as any other
-
-        # Create instance of the Upsampling layer
+        
+         # Create instance of the Upsampling layer
         self.us = Upsampling(samples_per_symbol)
         #initialize the transmit filtrer 
-        self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta, trainable = True)#, window ="blackman")
-        # Instantiate the receive filter 
-        self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta,trainable = True)#, window = "blackman")
-        # Instantiate a downsampling layer
-        self.ds = Downsampling(samples_per_symbol, self.rrcf.length-1, n) #offset due to group delay
-        #self.ds = Downsampling(samples_per_symbol, 2*64, n) #self.m_rrcf.length, n) #offset set to 0 
+        self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta, trainable = True)
 
-        
-        self.binary_source = BinarySource() #draw random bits to decode 
+                    
+       
+        ####################################
+        # Channel 
+        ####################################
         self.awgn_channel = AWGN() #initialize awgn channel 
+        ####################################
+        # Receive
+        ####################################
+
+        # Instantiate the receive filter 
+        self.m_rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
+        # Instantiate a downsampling layer
+        self.ds = Downsampling(samples_per_symbol, self.rrcf.length-1, num_symbols_per_codeword) #offset due to group delay
+        #Demapper
+        self.demapper = NeuralDemapper() # Intantiate the NeuralDemapper custom layer as any other  
         self.bce = tf.keras.losses.BinaryCrossentropy(from_logits=True) # Loss function
 
         self.training = training
 
         ## conditional encoder and decoder, use only when in not training mode- other components to be added here later 
         if not self.training:
+            #####################################
+            # Transmit 
+            ####################################
+            self.interleaver = RandomInterleaver() 
+           
             #initialize encoder and decoder if not in training mode 
             self.encoder = LDPC5GEncoder(k,n, num_bits_per_symbol) #pass no of info bits and lenght of the codeword, and bits per symbol
+
+            
+
+            #######################################
+            # Receiver: 
+            #######################################
+            
+
+            self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
             self.decoder = LDPC5GDecoder(
                 encoder=self.encoder,       # Pass encoder instance
                 cn_type="boxplus-phi",      # Use stable, numerical single parity check function
                 hard_out=False,             # Use soft-output decoding
                 num_iter=num_iter           # Number of BP iterations
-    )
+            )
 
 
-    @tf.function(jit_compile=True) # Enable graph execution to speed things up
+    #@tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         #noise variance:
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
@@ -212,24 +235,18 @@ class End2EndSystem(Model): # Inherits from Keras Model
         ############################
         #matched filter, downsampling 
         ############################
-        y_mf = self.m_rrcf(y,padding ="same")
+        y_mf = self.m_rrcf(y)#,padding ="same")
         #y_mf = self.rrcf(y)
         y_ds = self.ds(y_mf) #downsample sequence
-
-        
-        #paddings = tf.constant([[0,0],[0,192]])
        
-        # Apply padding
-        #y_ds_padded = PaddingFunction(y_ds,n)
-        
 
         ############################
         #Receiver
         ############################
         # Demapping 
         llr = self.demapper(y_ds)  # Call the NeuralDemapper custom layer as any other
-        llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         
+     
         ############################
         #Loss or Output
         ############################
@@ -240,7 +257,10 @@ class End2EndSystem(Model): # Inherits from Keras Model
             return loss
         else:
             #Decode llrs
+            tf.print("shape after demapping is:", tf.shape(llr))
+            
             llr = self.deinterlever(llr)
+            #llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
             decoded_bits = self.decoder(llr)
             return uncoded_bits, decoded_bits
         
@@ -252,10 +272,10 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 1000 #was used 30000
+NUM_TRAINING_ITERATIONS = 1 #was used 30000
 
 # Set a seed for reproducibility
-tf.random.set_seed(1)
+tf.random.set_seed(42)
 
 # Track time for model training
 training_start_time = time.time()
@@ -326,7 +346,7 @@ def load_weights(model, model_weights_path):
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
