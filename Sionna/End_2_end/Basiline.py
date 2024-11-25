@@ -151,7 +151,7 @@ class Baseline(Model): # Inherits from Keras Model
         ##############################
         # Channel 
         ##############################
-        y = self.awgn_channel([x, no])
+        y = self.awgn_channel([x_rrcf, no])
         ############################
         #matched filter, downsampling 
         ############################
