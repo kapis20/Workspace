@@ -50,7 +50,7 @@ num_bits_per_symbol = 6 # Baseline is 64-QAM
 #modulation_order = 2**num_bits_per_symbol
 coderate = 0.75 #0.75 # Coderate for the outer code
 n = 4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
-num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
+num_symbols_per_codeword = n/num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
 #filter
@@ -139,10 +139,10 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         #Filter and sampling
         ############################
-        x_us = self.us(x) # upsampling 
+        # x_us = self.us(x) # upsampling 
 
-        #Filter the upsampled sequence 
-        x_rrcf = self.rrcf(x_us)
+        # #Filter the upsampled sequence 
+        # x_rrcf = self.rrcf(x_us)
 
         
         # Store only constellation data after mapping
@@ -151,31 +151,33 @@ class Baseline(Model): # Inherits from Keras Model
         ##############################
         # Channel 
         ##############################
-        y = self.awgn_channel([x_rrcf, no])
+        y = self.awgn_channel([x, no])
         ############################
         #matched filter, downsampling 
         ############################
-        y_mf = self.rrcf(y, padding = "full")
-        #y_mf = self.rrcf(y)
-        y_ds = self.ds(y_mf) #downsample sequence
-        ############################
+        # y_mf = self.rrcf(y, padding = "full")
+        # #y_mf = self.rrcf(y)
+        # y_ds = self.ds(y_mf) #downsample sequence
+        # ############################
         # Receive 
         ############################
-        llr_ch = self.demapper([y_ds,no])
+        llr_ch = self.demapper([y,no])
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
         tf.print("Sahoe after bits are generated:", tf.shape(uncoded_bits))
         tf.print("Shape after encoder", tf.shape(bits_e))
         tf.print("shape after interleaver", tf.shape(bits_i))
         tf.print("Shape after mapper:", tf.shape(x))
-        tf.print("Shape after upsampling:", tf.shape(x_us))
-        tf.print("Shape after tx filtering:", tf.shape(x_rrcf))
-        tf.print("Shape after rx filtering:", tf.shape(y_mf))
-        tf.print("Shape after downsampling:", tf.shape(y_ds))
+        # tf.print("Shape after upsampling:", tf.shape(x_us))
+        # tf.print("Shape after tx filtering:", tf.shape(x_rrcf))
+        # tf.print("Shape after rx filtering:", tf.shape(y_mf))
+        # tf.print("Shape after downsampling:", tf.shape(y_ds))
         tf.print("Shape after demapper:", tf.shape(llr_ch))
         tf.print("Shape after deinterleaver:", tf.shape(llr_de))
-        llr_de = tf.reshape(llr_de, [batch_size, n])
+        llr_de_r = tf.reshape(llr_de, [batch_size, n])
+        tf.print("Shape after reshaped deinterleaver:", tf.shape(llr_de_r))
         decoded_bits = self.decoder(llr_de)
+        tf.print("Shape of decoded bits", tf.shape(decoded_bits))
         return uncoded_bits, decoded_bits
 
 

@@ -66,7 +66,7 @@ samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling fa
 
 
 BATCH_SIZE = 10#10 #how many examples are processed by sionna in parallel 
-rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta, window ="blackman" )
+rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)#, window ="blackman" )
 rrcf.show("impulse")
 rrcf.show("magnitude", "db") # Logarithmic scale
 rrcf.show("magnitude", "lin") # Linear scale
@@ -75,7 +75,7 @@ rrcf.show("magnitude", "lin") # Linear scale
 qam = QAMSource(num_bits_per_symbol) # Layer to generate batches of QAM symbols
 
 
-x = qam([BATCH_SIZE, n])
+x = qam([BATCH_SIZE, num_symbols_per_codeword])
 
 print("Shape of x", x.shape)
 
