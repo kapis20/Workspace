@@ -100,3 +100,5 @@ plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
             r"Received sequence after matched filtering $x_{mf}$"]);
 
 plt.show()
+
+empirical_psd(x_rrcf, oversampling=samples_per_symbol, ylim=[-100, 3]);

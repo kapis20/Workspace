@@ -127,3 +127,7 @@ plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
             r"Received sequence after matched filtering $x_{mf}$"]);
 
 plt.show()
+
+aclr_db = 10*np.log10(empirical_aclr(x_rrcf, oversampling=samples_per_symbol))
+print("Empirical ACLR (db):", aclr_db)
+print("Filter ACLR (dB)", 10*np.log10(rrcf.aclr))
