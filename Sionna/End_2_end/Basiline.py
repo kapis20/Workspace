@@ -177,7 +177,7 @@ class Baseline(Model): # Inherits from Keras Model
         #llr_de_r = tf.reshape(llr_de, [batch_size, n])
         #tf.print("Shape after reshaped deinterleaver:", tf.shape(llr_de_r))
         decoded_bits = self.decoder(llr_de)
-        tf.print("Shape of decoded bits", tf.shape(decoded_bits))
+        #tf.print("Shape of decoded bits", tf.shape(decoded_bits))
         return uncoded_bits, decoded_bits
 
 
