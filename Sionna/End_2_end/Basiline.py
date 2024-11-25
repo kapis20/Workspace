@@ -133,9 +133,9 @@ class Baseline(Model): # Inherits from Keras Model
         # Transmit
         #############################
 
-        bits = self.encoder(uncoded_bits)
-        bits = self.interleaver(bits)
-        x = self.mapper(bits)
+        bits_e = self.encoder(uncoded_bits)
+        bits_i = self.interleaver(bits_e)
+        x = self.mapper(bits_i)
         ############################
         #Filter and sampling
         ############################
@@ -164,10 +164,16 @@ class Baseline(Model): # Inherits from Keras Model
         llr_ch = self.demapper([y_ds,no])
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
+        tf.print("Sahoe after bits are generated:", tf.shape(uncoded_bits))
+        tf.print("Shape after encoder", tf.shape(bits_e))
+        tf.print("shape after interleaver", tf.shape(bits_i))
         tf.print("Shape after mapper:", tf.shape(x))
         tf.print("Shape after upsampling:", tf.shape(x_us))
-        tf.print("Shape after filtering:", tf.shape(x_rrcf))
+        tf.print("Shape after tx filtering:", tf.shape(x_rrcf))
+        tf.print("Shape after rx filtering:", tf.shape(y_mf))
         tf.print("Shape after downsampling:", tf.shape(y_ds))
+        tf.print("Shape after demapper:", tf.shape(llr_ch))
+        tf.print("Shape after deinterleaver:", tf.shape(llr_de))
         llr_de = tf.reshape(llr_de, [batch_size, n])
         decoded_bits = self.decoder(llr_de)
         return uncoded_bits, decoded_bits
