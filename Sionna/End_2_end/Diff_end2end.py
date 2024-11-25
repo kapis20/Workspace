@@ -195,7 +195,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
             )
 
 
-    #@tf.function(jit_compile=True) # Enable graph execution to speed things up
+    @tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         #noise variance:
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
@@ -257,10 +257,10 @@ class End2EndSystem(Model): # Inherits from Keras Model
             return loss
         else:
             #Decode llrs
-            tf.print("shape after demapping is:", tf.shape(llr))
+            #tf.print("shape after demapping is:", tf.shape(llr))
             
             llr = self.deinterlever(llr)
-            #llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
+            llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
             decoded_bits = self.decoder(llr)
             return uncoded_bits, decoded_bits
         
