@@ -87,7 +87,7 @@ x_us = us(x)
 print("Shape of x_us", x_us.shape)
 
 # Filter the upsampled sequence
-x_rrcf = rrcf(x_us)#, padding = "full")
+x_rrcf = rrcf((x_us), padding = "full")
 print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
 # Apply the matched filter
 x_mf = rrcf(x_rrcf, padding = "full")
