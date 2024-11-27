@@ -99,7 +99,9 @@ def enforce_PAPR_Constraints(x_rrcf,papr_constraint_db):
     
     # Step 7: Clip the signal
     max_allowed_power = papr_constraint_linear * average_power  # Shape: (10, 1)
-    max_allowed_power = max_allowed_power[:, None]  # Shape becomes (10, 2856)
+    #max_allowed_power = max_allowed_power[:, None]  # Shape becomes (10, 2856)
+    max_allowed_power = tf.broadcast_to(max_allowed_power, tf.shape(x_rrcf))
+
     x_rrcf_clipped = tf.where(
     clipped_mask,
     #Explicitly Cast tf.sqrt(max_allowed_power) to complex64
@@ -155,7 +157,7 @@ class Baseline(Model): # Inherits from Keras Model
                 num_iter=num_iter           # Number of BP iterations
     )
 
-    #@tf.function # Enable graph execution to speed things up
+    @tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
@@ -175,7 +177,9 @@ class Baseline(Model): # Inherits from Keras Model
         #Filter the upsampled sequence 
         x_rrcf = self.rrcf(x_us)
 
-        
+        #tf.print("ACLR is (db)",10*np.log10(self.rrcf.aclr))
+        # tf.print("Type of rrcf:", type(self.rrcf))
+        # tf.print("Attributes of rrcf:", dir(self.rrcf))
         ############################
         # ACLR constraint 
         ############################
@@ -200,17 +204,18 @@ class Baseline(Model): # Inherits from Keras Model
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
         # tf.print("Sahoe after bits are generated:", tf.shape(uncoded_bits))
-        # tf.print("Shape after encoder", tf.shape(bits_e))
+        #tf.print("Shape after encoder", tf.shape(bits_e))
         # tf.print("shape after interleaver", tf.shape(bits_i))
         # tf.print("Shape after mapper:", tf.shape(x))
         # tf.print("Shape after upsampling:", tf.shape(x_us))
-        # tf.print("Shape after tx filtering:", tf.shape(x_rrcf))
+        # tf.print("Shape after tx filtering and PAPR:", tf.shape(x_rrcf))
         # tf.print("Shape after rx filtering:", tf.shape(y_mf))
         # tf.print("Shape after downsampling:", tf.shape(y_ds))
         # tf.print("Shape after demapper:", tf.shape(llr_ch))
         # tf.print("Shape after deinterleaver:", tf.shape(llr_de))
         #llr_de_r = tf.reshape(llr_de, [batch_size, n])
         #tf.print("Shape after reshaped deinterleaver:", tf.shape(llr_de_r))
+        llr_de = tf.reshape(llr_de, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         decoded_bits = self.decoder(llr_de)
         #tf.print("Shape of decoded bits", tf.shape(decoded_bits))
         return uncoded_bits, decoded_bits
@@ -233,7 +238,7 @@ model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
