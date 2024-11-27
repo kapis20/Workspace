@@ -77,6 +77,7 @@ constellation_data_list = []
 # Temp PARP constraints function
 ################################
 def enforce_PAPR_Constraints(x_rrcf,papr_constraint_db):
+    tf.print("Type of x_rrcf:", x_rrcf.dtype)
      # Step 1: Compute instantaneous power
     instantaneous_power = tf.abs(x_rrcf) ** 2  # Shape: (batch_size, num_symbols)
     tf.print("Shape of instantenous power is:", tf.shape(instantaneous_power))
@@ -96,6 +97,17 @@ def enforce_PAPR_Constraints(x_rrcf,papr_constraint_db):
     total_clipped_symbols = tf.reduce_sum(clipped_count_per_batch)
     tf.print("Total clipped symbols is:",total_clipped_symbols)
     
+    # Step 7: Clip the signal
+    max_allowed_power = papr_constraint_linear * average_power  # Shape: (10, 1)
+    max_allowed_power = max_allowed_power[:, None]  # Shape becomes (10, 2856)
+    x_rrcf_clipped = tf.where(
+    clipped_mask,
+    #Explicitly Cast tf.sqrt(max_allowed_power) to complex64
+    #to cast the denominator tf.abs(x_rrcf) to tf.complex64 to match the type of the numerator.
+    tf.cast(tf.sqrt(max_allowed_power), tf.complex64) * x_rrcf / tf.cast(tf.abs(x_rrcf), tf.complex64),  # Clip symbols # Clip symbols
+    x_rrcf  # Keep symbols unchanged
+    )
+    return x_rrcf_clipped
 
 ###############################
 # Baseline
@@ -167,7 +179,7 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         # ACLR constraint 
         ############################
-
+        x_rrcf = enforce_PAPR_Constraints(x_rrcf,5.5)
         # Store only constellation data after mapping
         # Append ebno_db and constellation data as tuple to list
         # constellation_data_list.append((float(ebno_db), x))
