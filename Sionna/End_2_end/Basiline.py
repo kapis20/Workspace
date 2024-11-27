@@ -142,14 +142,8 @@ class Baseline(Model): # Inherits from Keras Model
                 num_iter=num_iter           # Number of BP iterations
     )
 
-    @tf.function # Enable graph execution to speed things up
+    #@tf.function # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
-        # # If `ebno_db` is a scalar, a tensor with shape [batch size] is created as it is what is expected by some layers
-        # if len(ebno_db.shape) == 0:
-        #     ebno_db = tf.fill([batch_size], ebno_db)
-        # no = ebnodb2no(ebno_db, num_bits_per_symbol, coderate)
-        # no = expand_to_rank(no, 2)
-
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
         uncoded_bits = self.binary_source([batch_size, k]) 
