@@ -72,6 +72,30 @@ results_baseline = {
 constellation_baseline = {}
 constellation_data_list = []
 
+
+################################
+# Temp PARP constraints function
+################################
+def enforce_PAPR_Constraints(x_rrcf,papr_constraint_db):
+     # Step 1: Compute instantaneous power
+    instantaneous_power = tf.abs(x_rrcf) ** 2  # Shape: (batch_size, num_symbols)
+    tf.print("Shape of instantenous power is:", tf.shape(instantaneous_power))
+    # Step 2: Compute average power
+    average_power = tf.reduce_mean(instantaneous_power, axis=1, keepdims=True)  # Shape: (batch_size, 1)
+    tf.print("Shape of average_power is:",tf.shape(average_power))
+    # Step 3: Normalize power
+    normalized_power = instantaneous_power / average_power  # Shape: (batch_size, num_symbols)
+    tf.print("Shape of normilized_power is:",tf.shape(normalized_power))
+    # Step 4: Convert PAPR constraint to linear scale
+    papr_constraint_linear = tf.pow(10.0, papr_constraint_db / 10.0)
+    tf.print("Shape of papr_constraint_linear is:",tf.shape(papr_constraint_linear))
+
+    # Step 6: Count the number of clipped symbols
+    clipped_mask = normalized_power > papr_constraint_linear
+    clipped_count_per_batch = tf.reduce_sum(tf.cast(clipped_mask, tf.int32), axis=1)
+    total_clipped_symbols = tf.reduce_sum(clipped_count_per_batch)
+    
+
 ###############################
 # Baseline
 ###############################
@@ -145,6 +169,10 @@ class Baseline(Model): # Inherits from Keras Model
         x_rrcf = self.rrcf(x_us)
 
         
+        ############################
+        # ACLR constraint 
+        ############################
+
         # Store only constellation data after mapping
         # Append ebno_db and constellation data as tuple to list
         # constellation_data_list.append((float(ebno_db), x))
@@ -198,7 +226,7 @@ model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()

@@ -89,8 +89,79 @@ print("Shape of x_us", x_us.shape)
 # Filter the upsampled sequence
 x_rrcf = rrcf((x_us), padding = "full")
 print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
+print("Fiurst 10 tensor values:", x_rrcf.numpy()[:10])
+
+######################################
+# ACLR constraint 
+######################################
+#Step 1
+# Compute instantaneous power for all sequences
+instantaneous_power = np.abs(x_rrcf) ** 2  # Shape: (10, 2856)
+print("Shape of instantenous power of x_rrcf is:",instantaneous_power.shape)
+print("First 10 tensor values of power:", instantaneous_power[:10])
+#Step 2
+# Compute average power for each batch
+average_power = np.mean(instantaneous_power, axis=1)  # Shape: (10,)
+print("Shape of average power of x_rrcf is:",average_power.shape)
+print("First 10 tensor values of average power:", average_power[:10])
+#Step 3 
+#Normalize power
+# Reshape average_power to align with instantaneous_power
+normalized_power = instantaneous_power / average_power[:,None]  #  Shape: (10, 2856)
+print("Shape of anormalized power of x_rrcf is:",normalized_power.shape)
+print("First 10 tensor values of normalized power:", normalized_power[:10])
+#Step 4 
+#Convert PAPR constraint to linear scale
+papr_constraint_db = 5.5  # PAPR target in dB
+papr_constraint_linear = 10 ** (papr_constraint_db / 10)  # Linear scale
+print("Linear PARP is:", papr_constraint_linear)
+#Step 5
+#Compute PAPR violation
+violations = np.maximum(normalized_power - papr_constraint_linear, 0)  # Shape: (10, 2856)
+print("Shape of violations is:",violations.shape)
+print("First 10 tensor values of violations:", violations[:10])
+
+# Step 6: Aggregate violations
+average_violation = np.mean(violations, axis=1)  # Shape: (10,)
+print("Shape of average_violation is:",average_violation.shape)
+
+# Step 7: Clip the signal to enforce the PAPR constraint
+
+max_allowed_power = papr_constraint_linear * average_power  # Shape: (10, 1)
+print("Shape of max allowed power is:",max_allowed_power.shape)
+#Convert shape for maxe_allowed_power
+max_allowed_power = max_allowed_power[:, None]  # Shape becomes (10, 2856)
+print("New shape of max allowed power is:",max_allowed_power.shape)
+
+# Step 5.1: Create a boolean mask for symbols exceeding the max allowed power
+clipped_mask = instantaneous_power > max_allowed_power  # Shape: (10, 2856)
+
+# Step 5.2: Count the number of clipped symbols per batch
+clipped_count_per_batch = np.sum(clipped_mask, axis=1)  # Shape: (10,)
+
+# Step 5.3: Total clipped symbols across all batches
+total_clipped_symbols = np.sum(clipped_count_per_batch)
+
+# Print results
+for i, count in enumerate(clipped_count_per_batch):
+    print(f"Batch {i+1}: {count} symbols were clipped.")
+
+print(f"Total clipped symbols across all batches: {total_clipped_symbols}")
+
+x_rrcf_clipped = np.where(
+    instantaneous_power > max_allowed_power,
+    np.sqrt(max_allowed_power) * x_rrcf / np.abs(x_rrcf),  # Scale symbols
+    x_rrcf  # Keep symbols unchanged
+)
+print("Shape of clipped signal is:",x_rrcf_clipped.shape)
+
+# # Print results
+# for i, violation in enumerate(average_violation):
+#     print(f"Batch {i+1}: Average Violation = {violation:.4f}")
+
+
 # Apply the matched filter
-x_mf = rrcf(x_rrcf, padding = "full")
+x_mf = rrcf(x_rrcf_clipped, padding = "full")
 print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
 # Instantiate a downsampling layer
 ds = Downsampling(samples_per_symbol, rrcf.length-1, num_symbols_per_codeword)
@@ -119,7 +190,7 @@ plt.show()
 # Visualize the different signals
 plt.figure(figsize=(12, 8))
 plt.plot(np.real(x_us[0]), "x")
-plt.plot(np.real(x_rrcf[0, rrcf.length//2:]))
+plt.plot(np.real(x_rrcf_clipped[0, rrcf.length//2:]))
 plt.plot(np.real(x_mf[0,rrcf.length -1:]));
 plt.xlim(0,100)
 plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
