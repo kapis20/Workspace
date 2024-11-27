@@ -134,7 +134,7 @@ max_allowed_power = max_allowed_power[:, None]  # Shape becomes (10, 2856)
 print("New shape of max allowed power is:",max_allowed_power.shape)
 
 # Step 5.1: Create a boolean mask for symbols exceeding the max allowed power
-clipped_mask = instantaneous_power > max_allowed_power  # Shape: (10, 2856)
+clipped_mask = normalized_power > papr_constraint_linear  # Shape: (10, 2856)
 
 # Step 5.2: Count the number of clipped symbols per batch
 clipped_count_per_batch = np.sum(clipped_mask, axis=1)  # Shape: (10,)
@@ -149,7 +149,7 @@ for i, count in enumerate(clipped_count_per_batch):
 print(f"Total clipped symbols across all batches: {total_clipped_symbols}")
 
 x_rrcf_clipped = np.where(
-    instantaneous_power > max_allowed_power,
+    normalized_power > papr_constraint_linear,
     np.sqrt(max_allowed_power) * x_rrcf / np.abs(x_rrcf),  # Scale symbols
     x_rrcf  # Keep symbols unchanged
 )

@@ -94,6 +94,7 @@ def enforce_PAPR_Constraints(x_rrcf,papr_constraint_db):
     clipped_mask = normalized_power > papr_constraint_linear
     clipped_count_per_batch = tf.reduce_sum(tf.cast(clipped_mask, tf.int32), axis=1)
     total_clipped_symbols = tf.reduce_sum(clipped_count_per_batch)
+    tf.print("Total clipped symbols is:",total_clipped_symbols)
     
 
 ###############################
