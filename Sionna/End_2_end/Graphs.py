@@ -171,6 +171,60 @@ def plot_loss_function(loss_file_path,fig_file_path):
 
    
 
+####################################################
+# BLER BER baseline 
+##################################################
+import pickle
+import matplotlib.pyplot as plt
+
+def plot_baseline_ber_bler(file_names, papr_limits):
+    """
+    Plots BER and BLER for multiple baseline results corresponding to different PAPR limits.
+    
+    Parameters:
+        file_names (list of str): List of file paths to the baseline result files.
+        papr_limits (list of float): List of corresponding PAPR limits.
+    """
+    # Create a figure with two subplots, one for BER and one for BLER
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+
+    # Loop through the result files and plot data
+    for file_name, papr in zip(file_names, papr_limits):
+        # Load data from the current file
+        with open(file_name, 'rb') as f:
+            baseline_results = pickle.load(f)
+
+        # Extract baseline data
+        ebno_dbs_baseline = baseline_results['ebno_dbs']['baseline']
+        BLER_baseline = baseline_results['BLER']['baseline']
+        BER_baseline = baseline_results['BER']['baseline']
+
+        # Add BER and BLER to the respective subplots
+        label_suffix = f"PAPR={papr}"
+        ax1.semilogy(ebno_dbs_baseline, BER_baseline, label=f"BER - Baseline ({label_suffix})")
+        ax2.semilogy(ebno_dbs_baseline, BLER_baseline, label=f"BLER - Baseline ({label_suffix})")
+
+    # Format BER subplot
+    ax1.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
+    ax1.set_ylabel("BER")
+    ax1.grid(which="both", linestyle='--', linewidth=0.5)
+    ax1.legend()
+    ax1.set_ylim((1e-5, 1))
+
+    # Format BLER subplot
+    ax2.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
+    ax2.set_xlabel(r"$E_b/N_0$ (dB)")
+    ax2.set_ylabel("BLER")
+    ax2.grid(which="both", linestyle='--', linewidth=0.5)
+    ax2.legend()
+    ax2.set_ylim((1e-5, 1))
+
+    # Adjust layout and save
+    plt.tight_layout()
+    plt.savefig("ber_bler_baseline_papr_plot.png")
+    plt.show()
+
+
 
 
 
@@ -178,18 +232,28 @@ def plot_loss_function(loss_file_path,fig_file_path):
 #calling functions 
 ##################################################
 # Plot the BER and BLER results from "bler_results.pkl"
-plot_ber_bler("bler_results.pkl","bler_results_baseline.pkl")
-#plot_ber_bler_NN("bler_results.pkl")
+# plot_ber_bler("bler_results.pkl","bler_results_baseline.pkl")
+# #plot_ber_bler_NN("bler_results.pkl")
 
-# Plot the constellation before training
-plot_constellation("constellation_data.pkl", stage="constellation_before", num_bits_per_symbol=6)
+# # Plot the constellation before training
+# plot_constellation("constellation_data.pkl", stage="constellation_before", num_bits_per_symbol=6)
 
-# Plot the constellation after training
-plot_constellation("constellation_data.pkl", stage="constellation_after", num_bits_per_symbol=6)
+# # Plot the constellation after training
+# plot_constellation("constellation_data.pkl", stage="constellation_after", num_bits_per_symbol=6)
 
-# Plot baseline constellation
-#plot_constellation_baseline("constellation_baseline.pkl")
+# # Plot baseline constellation
+# #plot_constellation_baseline("constellation_baseline.pkl")
 
-#plot loss function:
+# #plot loss function:
 
-plot_loss_function("loss_values.pkl","loss_values_plot.png")
+# plot_loss_function("loss_values.pkl","loss_values_plot.png")
+
+# Example usage
+file_names = [
+    'bler_results_baseline5_5.pkl',
+    'bler_results_baseline6_0.pkl',
+    'bler_results_baseline6_5.pkl'
+]
+papr_limits = [5.5, 6.0, 6.5]
+
+plot_baseline_ber_bler(file_names, papr_limits)
