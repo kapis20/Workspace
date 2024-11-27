@@ -183,7 +183,7 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         # ACLR constraint 
         ############################
-        x_rrcf = enforce_PAPR_Constraints(x_rrcf,6.5)
+        x_rrcf = enforce_PAPR_Constraints(x_rrcf,6.0)
         # Store only constellation data after mapping
         # Append ebno_db and constellation data as tuple to list
         # constellation_data_list.append((float(ebno_db), x))
