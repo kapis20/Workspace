@@ -157,7 +157,7 @@ class Baseline(Model): # Inherits from Keras Model
                 num_iter=num_iter           # Number of BP iterations
     )
 
-    @tf.function(jit_compile=True) # Enable graph execution to speed things up
+    #@tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
