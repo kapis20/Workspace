@@ -58,10 +58,13 @@ ebno_db_max = 18.0
 num_bits_per_symbol = 6 # Baseline is 64-QAM
 modulation_order = 2**num_bits_per_symbol
 coderate = 0.75 #0.75 # Coderate for the outer code
-n = 3648 #4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
+n = 3660 #3648 #4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
+
+#For filters to include the CP and PTRS as well 
+
 
 # PTRS 
 # PTRS and RPN parameters for 120 GHz
@@ -101,10 +104,10 @@ print("Shape of x", x.shape)
 ### Integrate PTRS and RPN ###
 # Step 1: Generate PTRS and RPN sequences
 ptrs_sequence = ZadoffChuSequence(Nzc_PTRS, u_PTRS).generate_zadoff_chu()  # PTRS symbols
-rpn_sequence = ZadoffChuSequence(Nzc_RPN, u_RPN).generate_zadoff_chu()  # RPN symbols
+#rpn_sequence = ZadoffChuSequence(Nzc_RPN, u_RPN).generate_zadoff_chu()  # RPN symbols
 print("PTRS sequence shape is:", ptrs_sequence.shape)
 print("PTRS sequence (NumPy):", ptrs_sequence)
-print("rpn_sequence shape is:", rpn_sequence.shape)
+#print("rpn_sequence shape is:", rpn_sequence.shape)
 
 # Step 2: Split QAM data into Q blocks
 data_symbols_per_block = num_symbols_per_codeword // Q  # Symbols per block
@@ -114,18 +117,19 @@ print("Data symbols per block is", data_symbols_per_block)
 tf.print("Tensor data blocks shape is:",tf.shape(data_blocks))
 
 ptrs_batch = tf.tile(tf.convert_to_tensor(ptrs_sequence, dtype=tf.complex64)[tf.newaxis, :], [BATCH_SIZE, 1])
-rpn_batch = tf.tile(tf.convert_to_tensor(rpn_sequence, dtype=tf.complex64)[tf.newaxis, :], [BATCH_SIZE, 1])
+#rpn_batch = tf.tile(tf.convert_to_tensor(rpn_sequence, dtype=tf.complex64)[tf.newaxis, :], [BATCH_SIZE, 1])
 
 tf.print("PTRS shape is",tf.shape(ptrs_batch))
 tf.print("RPN shape is",tf.shape(rpn_batch))
 #Integrate PTRS and RPNs into Q blocks 
 # Initialize an empty list to hold the blocks with PTRS and RPN
-blocks_with_ptrs_rpn = []
+blocks_with_ptrs = []
 for block in data_blocks:
-    block_with_ptrs_rpn = tf.concat([ptrs_batch, rpn_batch, block], axis=1)
-    blocks_with_ptrs_rpn.append(block_with_ptrs_rpn)
+    block_with_ptrs_rpn = tf.concat([ptrs_batch, block], axis=1)
+    # block_with_ptrs_rpn = tf.concat([ptrs_batch, rpn_batch, block], axis=1)
+    blocks_with_ptrs.append(block_with_ptrs_rpn)
 
-tf.print("Blocks with PTRS and RPNs shape is:",tf.shape(blocks_with_ptrs_rpn))
+tf.print("Blocks with PTRS and RPNs shape is:",tf.shape(blocks_with_ptrs))
 
 ### Add cyclic prefix ###
 # Define the CP ratio (e.g., 7% of block length)
@@ -134,7 +138,7 @@ cp_lenght = int(cp_ratio*4096 / (1-cp_ratio)) # // makes sure there are no decim
 
 print("CP lenght is", cp_lenght)
 # Combine all Q blocks into a single transmission block
-full_block = tf.reshape(blocks_with_ptrs_rpn, [10, -1]) 
+full_block = tf.reshape(blocks_with_ptrs, [10, -1]) 
 # Check the full transmission block length
 tf.print("Full block shape (before CP):", tf.shape(full_block))
 
@@ -154,9 +158,13 @@ tf.print("Full block shape (with CP):", tf.shape(full_block_with_cp))
 # Create instance of the Upsampling layer
 us = Upsampling(samples_per_symbol)
 
+
 # Upsample the QAM symbol sequence
-x_us = us(x)
-print("Shape of x_us", x_us.shape)
+#Tensor: 
+x_us = us(full_block_with_cp)
+# x_us = us(x)
+# print("Shape of x_us", x_us.shape)
+tf.print("shape of x_us tensor is:", tf.shape(x_us))
 
 # Filter the upsampled sequence
 x_rrcf = rrcf((x_us), padding = "full")
@@ -236,7 +244,7 @@ print("Fiurst 10 tensor values:", x_rrcf.numpy()[:10])
 
 
 # Apply the matched filter
-x_mf = rrcf(x_rrcf_clipped, padding = "full")
+x_mf = rrcf(x_rrcf, padding = "full")
 print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
 # Instantiate a downsampling layer
 ds = Downsampling(samples_per_symbol, rrcf.length-1, num_symbols_per_codeword)
