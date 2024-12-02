@@ -265,25 +265,32 @@ print("shape of received signal",x_hat.shape)
 # print("downsampled sequence is:",y_ds_padded.shape)
 
 
-# plt.figure()
-# plt.scatter(np.real(x_hat), np.imag(x_hat));
+# Convert tensors to NumPy arrays for plotting
+x_hat = x_hat.numpy()
+full_block_with_cp = full_block_with_cp.numpy()
+
+plt.figure()
+plt.scatter(np.real(x_hat), np.imag(x_hat));
+plt.scatter(np.real(full_block_with_cp), np.imag(full_block_with_cp));
 # plt.scatter(np.real(x), np.imag(x));
-# plt.legend(["Transmitted", "Received"]);
-# plt.title("Scatter plot of the transmitted and received QAM symbols")
-# print("MSE between x and x_hat (dB)", 10*np.log10(np.var(x-x_hat)))
-# plt.show()
+plt.legend(["Transmitted", "Received"]);
+plt.title("Scatter plot of the transmitted and received QAM symbols")
+#print("MSE between x and x_hat (dB)", 10*np.log10(np.var(x-x_hat)))
+print("MSE between x and x_hat (dB)", 10*np.log10(np.var(full_block_with_cp-x_hat)))
+plt.show()
 
-# # Visualize the different signals
-# plt.figure(figsize=(12, 8))
-# plt.plot(np.real(x_us[0]), "x")
-# plt.plot(np.real(x_rrcf_clipped[0, rrcf.length//2:]))
-# plt.plot(np.real(x_mf[0,rrcf.length -1:]));
-# plt.xlim(0,100)
-# plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
-#             r"Transmitted sequence after pulse shaping $x_{rrcf}$",
-#             r"Received sequence after matched filtering $x_{mf}$"]);
+# Visualize the different signals
+plt.figure(figsize=(12, 8))
+plt.plot(np.real(x_us[0]), "x")
+plt.plot(np.real(x_rrcf[0, rrcf.length//2:]))
+#plt.plot(np.real(x_rrcf_clipped[0, rrcf.length//2:]))
+plt.plot(np.real(x_mf[0,rrcf.length -1:]));
+plt.xlim(0,100)
+plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
+            r"Transmitted sequence after pulse shaping $x_{rrcf}$",
+            r"Received sequence after matched filtering $x_{mf}$"]);
 
-# plt.show()
+plt.show()
 
 # aclr_db = 10*np.log10(empirical_aclr(x_rrcf, oversampling=samples_per_symbol))
 # print("Empirical ACLR (db):", aclr_db)
