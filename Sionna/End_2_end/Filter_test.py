@@ -242,12 +242,15 @@ print("Fiurst 10 tensor values:", x_rrcf.numpy()[:10])
 # # for i, violation in enumerate(average_violation):
 # #     print(f"Batch {i+1}: Average Violation = {violation:.4f}")
 
+# Full block length (with data, PTRS, and CP)
+full_block_length = num_symbols_per_codeword + Q *Nzc_PTRS + cp_lenght
+print("full block lenght is",full_block_length)
 
 # Apply the matched filter
 x_mf = rrcf(x_rrcf, padding = "full")
 print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
 # Instantiate a downsampling layer
-ds = Downsampling(samples_per_symbol, rrcf.length-1, num_symbols_per_codeword)
+ds = Downsampling(samples_per_symbol, rrcf.length-1, full_block_length)
 print("lenght is", rrcf.length)
 # Recover the transmitted symbol sequence
 x_hat = ds(x_mf)
