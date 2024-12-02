@@ -58,7 +58,7 @@ ebno_db_max = 18.0
 num_bits_per_symbol = 6 # Baseline is 64-QAM
 modulation_order = 2**num_bits_per_symbol
 coderate = 0.75 #0.75 # Coderate for the outer code
-n = 3660 #3648 #4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
+n = 3648 #3648 #4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
@@ -120,7 +120,7 @@ ptrs_batch = tf.tile(tf.convert_to_tensor(ptrs_sequence, dtype=tf.complex64)[tf.
 #rpn_batch = tf.tile(tf.convert_to_tensor(rpn_sequence, dtype=tf.complex64)[tf.newaxis, :], [BATCH_SIZE, 1])
 
 tf.print("PTRS shape is",tf.shape(ptrs_batch))
-tf.print("RPN shape is",tf.shape(rpn_batch))
+#tf.print("RPN shape is",tf.shape(rpn_batch))
 #Integrate PTRS and RPNs into Q blocks 
 # Initialize an empty list to hold the blocks with PTRS and RPN
 blocks_with_ptrs = []
