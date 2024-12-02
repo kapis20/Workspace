@@ -126,21 +126,42 @@ for block in data_blocks:
     blocks_with_ptrs_rpn.append(block_with_ptrs_rpn)
 
 tf.print("Blocks with PTRS and RPNs shape is:",tf.shape(blocks_with_ptrs_rpn))
+
+### Add cyclic prefix ###
+# Define the CP ratio (e.g., 7% of block length)
+cp_ratio = 0.0703125  # CP length ratio
+cp_lenght = int(cp_ratio*4096 / (1-cp_ratio)) # // makes sure there are no decimal points, int needed for a tensor as well 
+
+print("CP lenght is", cp_lenght)
+# Combine all Q blocks into a single transmission block
+full_block = tf.reshape(blocks_with_ptrs_rpn, [10, -1]) 
+# Check the full transmission block length
+tf.print("Full block shape (before CP):", tf.shape(full_block))
+
+# Extract the CP from the last symbols of CP lenght
+cp = full_block[:,-cp_lenght:]
+# Prepend the CP to the full block
+tf.print("CP shape is:",tf.shape(cp))
+
+full_block_with_cp = tf.concat([cp, full_block], axis=1) #concacanetes cps and blocks, cps added at the end
+# Verify the final shape
+tf.print("Full block shape (with CP):", tf.shape(full_block_with_cp))
+
 #block_with_ptrs_rpn = tf.concat([ptrs_batch, rpn_batch, first_block], axis=1)  # Shape: [10, 24]
 
 
 
-# # Create instance of the Upsampling layer
-# us = Upsampling(samples_per_symbol)
+# Create instance of the Upsampling layer
+us = Upsampling(samples_per_symbol)
 
-# # Upsample the QAM symbol sequence
-# x_us = us(x)
-# print("Shape of x_us", x_us.shape)
+# Upsample the QAM symbol sequence
+x_us = us(x)
+print("Shape of x_us", x_us.shape)
 
-# # Filter the upsampled sequence
-# x_rrcf = rrcf((x_us), padding = "full")
-# print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
-# print("Fiurst 10 tensor values:", x_rrcf.numpy()[:10])
+# Filter the upsampled sequence
+x_rrcf = rrcf((x_us), padding = "full")
+print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
+print("Fiurst 10 tensor values:", x_rrcf.numpy()[:10])
 
 
 
@@ -214,23 +235,23 @@ tf.print("Blocks with PTRS and RPNs shape is:",tf.shape(blocks_with_ptrs_rpn))
 # #     print(f"Batch {i+1}: Average Violation = {violation:.4f}")
 
 
-# # Apply the matched filter
-# x_mf = rrcf(x_rrcf_clipped, padding = "full")
-# print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
-# # Instantiate a downsampling layer
-# ds = Downsampling(samples_per_symbol, rrcf.length-1, num_symbols_per_codeword)
-# print("lenght is", rrcf.length)
-# # Recover the transmitted symbol sequence
-# x_hat = ds(x_mf)
-# print("shape of received signal",x_hat.shape)
-# # x_tensor = tf.constant(x_hat)
-# # #print("Tensor is ",x_tensor)
-# # # Apply padding
-# # padding_amount = tf.maximum(0, n - tf.shape(x_tensor)[2])
-# # paddings = tf.constant([[0,0],[0,n-int(tf.shape(x_tensor)[1])]])
-# # print("Padding  is",paddings)
-# # y_ds_padded = tf.pad(x_tensor, paddings,"CONSTANT")
-# # print("downsampled sequence is:",y_ds_padded.shape)
+# Apply the matched filter
+x_mf = rrcf(x_rrcf_clipped, padding = "full")
+print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
+# Instantiate a downsampling layer
+ds = Downsampling(samples_per_symbol, rrcf.length-1, num_symbols_per_codeword)
+print("lenght is", rrcf.length)
+# Recover the transmitted symbol sequence
+x_hat = ds(x_mf)
+print("shape of received signal",x_hat.shape)
+# x_tensor = tf.constant(x_hat)
+# #print("Tensor is ",x_tensor)
+# # Apply padding
+# padding_amount = tf.maximum(0, n - tf.shape(x_tensor)[2])
+# paddings = tf.constant([[0,0],[0,n-int(tf.shape(x_tensor)[1])]])
+# print("Padding  is",paddings)
+# y_ds_padded = tf.pad(x_tensor, paddings,"CONSTANT")
+# print("downsampled sequence is:",y_ds_padded.shape)
 
 
 # plt.figure()
