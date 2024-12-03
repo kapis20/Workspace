@@ -172,7 +172,7 @@ print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
 print("Fiurst 10 tensor values:", x_rrcf.numpy()[:10])
 
 
-
+#
 
 # ######################################
 # # ACLR constraint 
