@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # Parameters from Table II
 PSD0_dB = -72  #dBc/Hz 
 PSD0 = 10**(PSD0_dB / 10)  # Convert to linear scale
-print("PSD0 linear is", PSD0)
+# print("PSD0 linear is", PSD0)
 f_carrier = 120e9  # Carrier frequency (120 GHz)
 f_ref = 20e9  # Reference frequency (20 GHz)
 scale_factor = 20 * np.log10(f_carrier / f_ref)  # Scaling for 120 GHz
@@ -27,19 +27,20 @@ numerator = np.prod([1 + (f / fz_i)**alpha for fz_i, alpha in zip(fz, alpha_zn)]
 denominator = np.prod([1 + (f / fp_i)**alpha for fp_i, alpha in zip(fp, alpha_pn)], axis=0)
 psd = PSD0 * (numerator / denominator)
 
-print("Numerator shape:", numerator.shape, "Sample values:", numerator[:5])
-print("Denominator shape:", denominator.shape, "Sample values:", denominator[:5])
-print("PSD (linear): Sample values:", psd[:5])
+# print("Numerator shape:", numerator.shape, "Sample values:", numerator[:5])
+# print("Denominator shape:", denominator.shape, "Sample values:", denominator[:5])
+# print("PSD (linear): Sample values:", psd[:5])
 # Scale for carrier frequency
-psd_db = 10 * np.log10(psd) #+ scale_factor  # Convert to dB scale
-print("PSD (dBc/Hz): Sample values:", psd_db[:5])
+psd_db = 10 * np.log10(psd) + scale_factor  # Convert to dB scale
+#print("PSD (dBc/Hz): Sample values:", psd_db[:5])
 # Plot the PSD
 plt.figure(figsize=(10, 6))
 plt.semilogx(f, psd_db)
 plt.xlabel("Frequency Offset (Hz)")
 plt.ylabel("Phase Noise PSD (dBc/Hz)")
-plt.title("Transmitter Phase Noise PSD for 20 GHz")
-plt.grid(True)
+plt.title("Transmitter Phase Noise PSD for 120 GHz")
+plt.grid(True, which = 'major')
+plt.grid(True, which = 'minor')
 plt.show()
 
 
