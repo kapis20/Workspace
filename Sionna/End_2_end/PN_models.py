@@ -68,6 +68,81 @@ class PhaseNoise:
         phase_noise = tf.signal.ifft(filtered_noise_freq)
         return tf.math.real(phase_noise)  # Return real part
 
+
+
+class ReceiverPhaseNoise:
+    def __init__(self, fc=20e9, lbw=187e3):
+        """
+        Initialize receiver phase noise model.
+        :param fc: Carrier frequency (Hz), default 20 GHz.
+        :param lbw: Loop bandwidth (Hz), default 187 kHz.
+        """
+        self.fc = fc
+        self.lbw = lbw
+
+        # Define parameters for each component
+        self.components = {
+            "Ref": {"FOM": -215, "P": 1e-3, "fz": np.inf, "fp": np.inf, "k": 2},
+            "PLL": {"FOM": -240, "P": 10e-3, "fz": 1e4, "fp": np.inf, "k": 1},
+            "VCOv2": {"FOM": -175, "P": 20e-3, "fz": 50.3e6, "fp": np.inf, "k": 2},
+            "VCOv3": {"FOM": -3, "P": np.inf, "fz": np.inf, "fp": np.inf, "k": 3},
+        }
+
+    def psd_component(self, component, f):
+        """
+        Compute PSD for a single component.
+        :param component: Component dictionary with FOM, P, fz, fp, k.
+        :param f: Frequency offset (Hz).
+        :return: PSD (linear scale).
+        """
+        FOM = component["FOM"]
+        P = component["P"]
+        fz = component["fz"]
+        fp = component["fp"]
+        k = component["k"]
+
+        # Compute PSD0
+        PSD0 = FOM + 20 * np.log10(self.fc) - 10 * np.log10(P)
+
+        # Compute PSD
+        psd = 10**(PSD0 / 10) * (1 + (f / fz)**k) / (1 + (f / fp)**k)
+        return psd
+
+    def compute_psd(self, f):
+        """
+        Compute total PSD at a given frequency offset.
+        :param f: Frequency offset (Hz).
+        :return: Total PSD (linear scale).
+        """
+        if f <= self.lbw:
+            # Add Ref and PLL components
+            psd = self.psd_component(self.components["Ref"], f) + \
+                  self.psd_component(self.components["PLL"], f)
+        else:
+            # Add VCOv2 and VCOv3 components
+            psd = self.psd_component(self.components["VCOv2"], f) + \
+                  self.psd_component(self.components["VCOv3"], f)
+        return psd
+
+
+from scipy.signal import welch
+
+# Initialize receiver PN model
+receiver_pn = ReceiverPhaseNoise()
+
+# Frequency range for PSD
+f = np.logspace(2, 10, 1000)  # From 100 Hz to 10 GHz
+psd_values = [receiver_pn.compute_psd(freq) for freq in f]
+
+# Plot PSD
+import matplotlib.pyplot as plt
+plt.semilogx(f, 10 * np.log10(psd_values))
+plt.title("Receiver Phase Noise PSD")
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("PSD (dB/Hz)")
+plt.grid()
+plt.show()
+
 # phase_noise_generator = PhaseNoise()
 # # Generate phase noise
 # num_samples = 1024
@@ -125,82 +200,3 @@ class PhaseNoise:
 # plt.show()
 
 
-
-
-
-
-
-
-
-    # def generate_phase_noise(self, num_samples, sampling_rate):
-    #     """
-    #     Generate time domain phase noise samples based on the PSD.
-    #     :param num_samples: Number of samples to generate.
-    #     :param sampling_rate: Sampling rate of the signal (in Hz).
-    #     :return: Phase noise samples (in radians).
-    #     """
-    #     #Generate frequency axis
-    #     #f = np.fft.fftfreq(num_samples, 1 / sampling_rate)[:num_samples // 2]
-    #     psd = self.compute_psd(f)  # Compute PSD for positive frequencies
-    #     psd_linear = 10**(psd / 10)  # Convert to linear scale
-        
-    #     # Generate random Gaussian noise in the frequency domain
-    #     noise_amplitude = np.sqrt(psd_linear)
-    #     random_phase = np.random.normal(0, 1, len(f)) + 1j * np.random.normal(0, 1, len(f))
-    #     noise_spectrum = noise_amplitude * random_phase
-
-    #     # Symmetrize to get a real signal in time domain
-    #     full_spectrum = np.zeros(num_samples, dtype=complex)
-    #     full_spectrum[:num_samples // 2] = noise_spectrum
-    #     full_spectrum[num_samples // 2:] = np.conj(noise_spectrum[::-1])
-
-    #     # Convert to time domain and return phase noise in radians
-    #     phase_noise = np.fft.ifft(full_spectrum).real
-    #     return phase_noise 
-
-    # def add_phase_noise(self, signal_tensor, sampling_rate):
-    #     """
-    #     Add phase noise to a signal tensor.
-    #     :param signal_tensor: Signal (complex tensor) to which phase noise is added.
-    #     :param sampling_rate: Sampling rate of the signal (in Hz).
-    #     :return: Signal with phase noise added.
-    #     """
-    #     num_samples = signal_tensor.shape[0]
-    #     phase_noise = self.generate_phase_noise(num_samples, sampling_rate)
-        
-    #     # Add phase noise as a complex exponential
-    #     phase_noise_tensor = tf.constant(np.exp(1j * phase_noise), dtype=signal_tensor.dtype)
-    #     return signal_tensor * phase_noise_tensor
-
-
-# phase_noise_model = PhaseNoise()#default parameters
-# # # Frequency offset range for PSD computation
-
-# f = np.logspace(2, 10, 1000)  # From 100 Hz to 10000 MHz (log scale)
-#  # Compute PSD for these frequency offsets
-# psd_db = phase_noise_model.compute_psd(f)
-
-# # # Plot the PSD vs Frequency Offset
-# # plt.figure(figsize=(10, 6))
-# # plt.semilogx(f, psd_db, label="120 GHz Transmitter Phase Noise")
-# # plt.xlabel("Frequency Offset (Hz)")
-# # plt.ylabel("Phase Noise PSD (dBc/Hz)")
-# # plt.title("Transmitter Phase Noise PSD for 120 GHz")
-# # plt.grid(True, which="major", linestyle='-')
-# # plt.grid(True, which="minor", linestyle=':')
-# # plt.legend()
-# # plt.show()
-
-# # Generate phase noise
-# num_samples = 1024
-# sampling_rate = 1e6  # 1 MHz
-# phase_noise = phase_noise_model.generate_phase_noise(num_samples, sampling_rate)
-
-# # Plot the time-domain phase noise
-
-# plt.plot(phase_noise)
-# plt.title("Time-Domain Phase Noise")
-# plt.xlabel("Sample Index")
-# plt.ylabel("Amplitude (radians)")
-# plt.grid()
-# plt.show()
