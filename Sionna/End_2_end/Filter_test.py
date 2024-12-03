@@ -42,6 +42,7 @@ import pickle
 
 ####### Custom ###########
 from ZadoffChu import ZadoffChuSequence
+from PN_models import PhaseNoise
 
 # Initialize timing for entire script
 start_time = time.time()
@@ -171,9 +172,27 @@ x_rrcf = rrcf((x_us), padding = "full")
 print("Shape of transmit filtered sequence x_rrcf is:",x_rrcf.shape)
 print("Fiurst 10 tensor values:", x_rrcf.numpy()[:10])
 
+##########################
+# Phase noise 
+##########################
+phase_noise_generator = PhaseNoise()
+num_samples_per_sequence1 = tf.shape(x_rrcf)[1].numpy()  # Total samples: 4308
+#tf.print("Shape of num_samples_per_sequence1", num_samples_per_sequence1)
+sampling_rate = 31.44e9  # Example sampling rate (16 GHz, adjust as needed)
 
-#
+# Generate phase noise for each sequence in the batch
+phase_noise_samples = []
+for _ in range(BATCH_SIZE):
+    phase_noise_samples.append(phase_noise_generator.generate_phase_noise(num_samples_per_sequence1, sampling_rate))
 
+# Stack the generated noise into a tensor of shape [10, 4308]
+phase_noise_tensor = tf.stack(phase_noise_samples)
+tf.print("shape of phase noise tensor is:", tf.shape(phase_noise_tensor))
+
+# Apply phase noise to the filtered signal (x_rrcf)
+x_noisy = x_rrcf * tf.exp(tf.complex(0.0, phase_noise_tensor))
+
+tf.print("Shape of noisy signal is", tf.shape(x_noisy))
 # ######################################
 # # ACLR constraint 
 # ######################################
@@ -247,7 +266,8 @@ full_block_length = num_symbols_per_codeword + Q *Nzc_PTRS + cp_lenght
 print("full block lenght is",full_block_length)
 
 # Apply the matched filter
-x_mf = rrcf(x_rrcf, padding = "full")
+# x_mf = rrcf(x_rrcf, padding = "full")
+x_mf = rrcf(x_noisy, padding = "full")
 print("Shape of matched filtered sequence x_mf is:",x_mf.shape)
 # Instantiate a downsampling layer
 ds = Downsampling(samples_per_symbol, rrcf.length-1, full_block_length)
@@ -290,6 +310,51 @@ plt.legend([r"Oversampled sequence of QAM symbols $x_{us}$",
             r"Transmitted sequence after pulse shaping $x_{rrcf}$",
             r"Received sequence after matched filtering $x_{mf}$"]);
 
+plt.show()
+
+
+##Origina; vs noisy signal 
+# Convert tensors to NumPy arrays for plotting
+x_rrcf_np = x_rrcf.numpy()
+x_noisy_np = x_noisy.numpy()
+
+# Plot real part of the first sequence
+plt.figure(figsize=(10, 6))
+plt.plot(np.real(x_rrcf_np[0, :500]), label="Original Signal (Real Part)")
+plt.plot(np.real(x_noisy_np[0, :500]), label="Noisy Signal (Real Part)", linestyle="--")
+plt.xlabel("Sample Index")
+plt.ylabel("Amplitude")
+plt.title("Effect of Phase Noise on Signal (First Sequence)")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Plot the generated phase noise
+plt.figure(figsize=(10, 4))
+plt.plot(phase_noise_tensor[0, :500].numpy())  # Plot the first 500 samples of the first sequence
+plt.title("Generated Phase Noise (First Sequence)")
+plt.xlabel("Sample Index")
+plt.ylabel("Phase Noise (radians)")
+plt.grid()
+plt.show()
+
+
+# Compute frequency spectrum
+original_spectrum = np.fft.fftshift(np.abs(np.fft.fft(x_rrcf_np[0, :])))
+noisy_spectrum = np.fft.fftshift(np.abs(np.fft.fft(x_noisy_np[0, :])))
+
+# Frequency axis
+freqs = np.fft.fftshift(np.fft.fftfreq(num_samples_per_sequence1, d=1/sampling_rate))
+
+# Plot frequency spectrum
+plt.figure(figsize=(10, 6))
+plt.plot(freqs, 20 * np.log10(original_spectrum), label="Original Signal Spectrum")
+plt.plot(freqs, 20 * np.log10(noisy_spectrum), label="Noisy Signal Spectrum", linestyle="--")
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Magnitude (dB)")
+plt.title("Frequency Spectrum of Original and Noisy Signals")
+plt.legend()
+plt.grid()
 plt.show()
 
 aclr_db = 10*np.log10(empirical_aclr(x_rrcf, oversampling=samples_per_symbol))
