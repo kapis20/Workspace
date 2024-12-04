@@ -40,6 +40,7 @@ import pickle
 # Custom imports 
 ###############################################
 from PN_models import PhaseNoise
+from Cyclic_Prefix import CyclicPrefix
 
 ###############################################
 # SNR range for evaluation and training [dB]
@@ -71,6 +72,11 @@ u_RPN = 2     # Root index for RPN
 # both 120 and 220 
 Q = 32  # Number of Q blocks
 
+# Cyclic Prefix 
+cp_ratio = 0.0703125
+cp_lenght = cp_ratio *n/(1+cp_ratio)
+
+lenght_of_block = int(num_symbols_per_codeword+cp_lenght)
 # Phase noise 
 PSD0_dB = -72, #dB
 f_carrier = 120e9
@@ -153,6 +159,11 @@ class Baseline(Model): # Inherits from Keras Model
         self.mapper = Mapper(constellation=self.constellation)
 
         ########################################
+        # Cyclic prefix 
+        ########################################
+        self.cp = CyclicPrefix(cp_ratio,n)
+
+        ########################################
         # Filters
         ########################################
         # Create instance of the Upsampling layer
@@ -160,7 +171,7 @@ class Baseline(Model): # Inherits from Keras Model
         #initialize the transmit filtrer 
         self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
         # Instantiate a downsampling layer
-        self.ds = Downsampling(samples_per_symbol, self.rrcf.length-1, num_symbols_per_codeword) #offset due to group delay
+        self.ds = Downsampling(samples_per_symbol, self.rrcf.length-1, lenght_of_block) #offset due to group delay
 
         ########################################
         # Channel 
@@ -204,10 +215,12 @@ class Baseline(Model): # Inherits from Keras Model
         bits_e = self.encoder(uncoded_bits)
         bits_i = self.interleaver(bits_e)
         x = self.mapper(bits_i)
+        #Add cyclic prefix 
+        x_with_cp = self.cp.add_cp(x)
         ############################
         #Filter and sampling
         ############################
-        x_us = self.us(x) # upsampling 
+        x_us = self.us(x_with_cp) # upsampling 
 
         #Filter the upsampled sequence 
         x_rrcf = self.rrcf(x_us)
@@ -226,23 +239,18 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         # Phase noise - transmitter 
         ############################
-        tf.print("signal with PAPR ", tf.shape(x_rrcf))
         sampling_rate = samples_per_symbol * 1 / (span_in_symbols / f_carrier)
         num_samples = tf.shape(x_rrcf)[-1]
-        print("num of samples is",num_samples)
         phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
         # Expand phase noise to cover all batches
         phase_noise_samples = tf.tile(
             tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
             )  # Shape: [batch_size, num_samples]
-        tf.print("shape of phase noise samples is:",tf.shape(phase_noise_samples))
         # Convert phase_noise_samples to complex type
         phase_noise_complex = tf.exp(
             tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
             )  # Convert to complex64 phase noise
-        tf.print("Shape of phase noise complex",tf.shape(phase_noise_complex))
         x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
-        tf.print("signal with PAPR and phase noise is", tf.shape(x_rrcf))
         ##############################
         # Channel 
         ##############################
@@ -256,7 +264,9 @@ class Baseline(Model): # Inherits from Keras Model
         # ############################
         # Receive 
         ############################
-        llr_ch = self.demapper([y_ds,no])
+        #Remove CP 
+        y_ds_no_cp = self.cp.remove_cp(y_ds)
+        llr_ch = self.demapper([y_ds_no_cp,no])
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
         # tf.print("Sahoe after bits are generated:", tf.shape(uncoded_bits))
