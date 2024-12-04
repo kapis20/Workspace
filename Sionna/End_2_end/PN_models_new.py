@@ -19,7 +19,11 @@ class PhaseNoise:
         self.PSD0 = 10**(PSD0_dB / 10)  # Convert to linear scale
         self.f_carrier = f_carrier
         self.f_ref = f_ref
-        self.scale_factor = 20 * tf.math.log10(f_carrier / f_ref) # Scaling for carrier frequency
+        #Scaling log 10 base but using ln in tf
+        self.scale_factor = 20 * (tf.math.log(f_carrier / f_ref) / tf.math.log(10.0)) 
+        #print("Scale factor dtype:", self.scale_factor.dtype)
+
+
                                         
         
         # Default zero and pole frequencies and exponents (if not provided)
@@ -37,7 +41,10 @@ class PhaseNoise:
         numerator = tf.reduce_prod([1 + (f / fz_i)**alpha for fz_i, alpha in zip(self.fz, self.alpha_zn)], axis=0)
         denominator = tf.reduce_prod([1 + (f / fp_i)**alpha for fp_i, alpha in zip(self.fp, self.alpha_pn)], axis=0)
         psd = self.PSD0 * (numerator / denominator)
-        return 10 * tf.math.log10(psd)+ self.scale_factor
+         # Cast scale factor to float64 to match psd
+        scale_factor = tf.cast(self.scale_factor, dtype=tf.float64)
+        #print("PSD dtype:", psd.dtype)
+        return 10 * (tf.math.log(psd) / tf.math.log(tf.constant(10.0, dtype=tf.float64))) + scale_factor
 
 
     def generate_phase_noise(self, num_samples, sampling_rate):
@@ -79,3 +86,20 @@ class PhaseNoise:
         # Transform back to time domain
         phase_noise = tf.signal.ifft(filtered_noise_freq)
         return tf.math.real(phase_noise)  # Return real part
+# # Instantiate the PhaseNoise class with default parameters
+# phase_noise = PhaseNoise()
+
+# # Compute the PSD for the default frequency range
+# frequency_offsets = phase_noise.f  # Default frequency range
+# psd_values = phase_noise.compute_psd(frequency_offsets)
+
+# # Plot the Phase Noise PSD vs Frequency Offset
+# plt.figure(figsize=(10, 6))
+# plt.plot(frequency_offsets.numpy(), psd_values.numpy(), label="Phase Noise PSD")
+# plt.xscale('log')  # Logarithmic scale for frequency axis
+# plt.xlabel("Frequency Offset (Hz)")
+# plt.ylabel("PSD (dB/Hz)")
+# plt.title("Phase Noise PSD vs Frequency Offset")
+# plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+# plt.legend()
+# plt.show()
