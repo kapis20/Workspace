@@ -77,7 +77,7 @@ Q = 32  # Number of Q blocks
 cp_ratio = 0.0703125
 cp_lenght = cp_ratio *n/(1+cp_ratio)
 
-lenght_of_block = int(num_symbols_per_codeword+cp_lenght)
+lenght_of_block = int(num_symbols_per_codeword+cp_lenght+Q*Nzc_PTRS)
 # Phase noise 
 PSD0_dB = -72, #dB
 f_carrier = 120e9
@@ -214,7 +214,7 @@ class Baseline(Model): # Inherits from Keras Model
             alpha_pn = [1.0,2.95]
         )
 
-    @tf.function(jit_compile=True) # Enable graph execution to speed things up
+    tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
@@ -229,10 +229,12 @@ class Baseline(Model): # Inherits from Keras Model
         #############################
         # PTRS pilots 
         #############################
-
+        tf.print("signal without PTRS",tf.shape(x))
         x_PTRS = self.PTRS.add_ptrs_to_blocks(x)
+        tf.print("signal wiht PTRS",tf.shape(x_PTRS))
         #Add cyclic prefix 
         x_with_cp = self.cp.add_cp(x_PTRS)
+        tf.print("signal after cp",tf.shape(x_with_cp))
         ############################
         #Filter and sampling
         ############################
@@ -255,18 +257,18 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         # Phase noise - transmitter 
         ############################
-        # sampling_rate = samples_per_symbol * 1 / (span_in_symbols / f_carrier)
-        # num_samples = tf.shape(x_rrcf)[-1]
-        # phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
-        # # Expand phase noise to cover all batches
-        # phase_noise_samples = tf.tile(
-        #     tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
-        #     )  # Shape: [batch_size, num_samples]
-        # # Convert phase_noise_samples to complex type
-        # phase_noise_complex = tf.exp(
-        #     tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
-        #     )  # Convert to complex64 phase noise
-        # x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
+        sampling_rate = samples_per_symbol * 1 / (span_in_symbols / f_carrier)
+        num_samples = tf.shape(x_rrcf)[-1]
+        phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
+        # Expand phase noise to cover all batches
+        phase_noise_samples = tf.tile(
+            tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
+            )  # Shape: [batch_size, num_samples]
+        # Convert phase_noise_samples to complex type
+        phase_noise_complex = tf.exp(
+            tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
+            )  # Convert to complex64 phase noise
+        x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
         ##############################
         # Channel 
         ##############################
@@ -282,6 +284,11 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         #Remove CP 
         y_ds_no_cp = self.cp.remove_cp(y_ds)
+
+        ###########################
+        # PN compensation 
+        ###########################
+        tf.print("Shape of signal is", tf.shape(y_ds_no_cp))
         llr_ch = self.demapper([y_ds_no_cp,no])
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
