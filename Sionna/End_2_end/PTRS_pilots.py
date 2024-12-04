@@ -150,3 +150,30 @@ class PhaseNoiseCompensator:
         phase_correction = tf.exp(-1j * interpolated_phase_error)
         compensated_signal = received_signal * phase_correction
         return compensated_signal
+
+    def remove_ptrs_from_signal(self, compensated_signal, Nzc_PTRS, Q, num_symbols_per_codeword):
+        """
+        Remove PTRS symbols from the compensated signal.
+
+        Args:
+            compensated_signal: The compensated signal (tensor of shape [batch_size, num_symbols_with_ptrs]).
+            Nzc_PTRS: Number of PTRS symbols per block.
+            Q: Number of blocks.
+            num_symbols_per_codeword: Total number of data symbols per codeword.
+
+        Returns:
+            The signal without PTRS symbols (tensor of shape [batch_size, num_symbols_without_ptrs]).
+        """
+        # Calculate the total number of symbols per block (PTRS + data)
+        symbols_per_block = num_symbols_per_codeword // Q + Nzc_PTRS
+
+        # Split the compensated signal into Q blocks
+        compensated_blocks = tf.split(compensated_signal, Q, axis=1)
+
+        # Remove PTRS symbols (first Nzc_PTRS symbols of each block)
+        data_blocks = [block[:, Nzc_PTRS:] for block in compensated_blocks]
+
+        # Concatenate the remaining data symbols
+        data_only_signal = tf.concat(data_blocks, axis=1)
+
+        return data_only_signal

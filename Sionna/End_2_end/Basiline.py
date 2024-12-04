@@ -311,8 +311,10 @@ class Baseline(Model): # Inherits from Keras Model
         y_compensated = self.phase_compensator.compensate_phase_noise(y_ds_no_cp, interpolated_phase_error)
         tf.print("Shape of compensated signal is", tf.shape(y_compensated))
 
+        data_only_signal = self.phase_compensator.remove_ptrs_from_signal(y_compensated, Nzc_PTRS, Q, num_symbols_per_codeword)
+        tf.print("Shape of data without PTRS",tf.shape(data_only_signal))
         
-        llr_ch = self.demapper([y_ds_no_cp,no])
+        llr_ch = self.demapper([data_only_signal,no])
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
         # tf.print("Sahoe after bits are generated:", tf.shape(uncoded_bits))
