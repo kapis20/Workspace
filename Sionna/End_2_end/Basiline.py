@@ -214,7 +214,7 @@ class Baseline(Model): # Inherits from Keras Model
             alpha_pn = [1.0,2.95]
         )
 
-    #@tf.function(jit_compile=True) # Enable graph execution to speed things up
+    @tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
@@ -229,10 +229,8 @@ class Baseline(Model): # Inherits from Keras Model
         #############################
         # PTRS pilots 
         #############################
-        tf.print("X before pilots:",tf.shape(x))
 
         x_PTRS = self.PTRS.add_ptrs_to_blocks(x)
-        tf.print("XPTRS ",tf.shape(x_PTRS))
         #Add cyclic prefix 
         x_with_cp = self.cp.add_cp(x_PTRS)
         ############################
