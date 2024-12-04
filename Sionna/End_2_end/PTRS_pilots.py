@@ -46,9 +46,15 @@ class PTRSPilotInserter:
         blocks_with_ptrs = [
             tf.concat([ptrs_batch, block], axis=1) for block in data_blocks
         ]
-
         # Concatenate all blocks with PTRS
-        return tf.concat(blocks_with_ptrs, axis=1)
+        signal_with_ptrs = tf.concat(blocks_with_ptrs, axis=1)
+         # Format transmitted PTRS (match dimensions: [batch_size, Q, Nzc_PTRS])
+        transmitted_ptrs = tf.tile(
+        tf.convert_to_tensor(self.ptrs_sequence, dtype=tf.complex64)[tf.newaxis, tf.newaxis, :],
+        [self.batch_size, self.Q, 1]
+        )
+        
+        return signal_with_ptrs, transmitted_ptrs
 
 # # Example usage
 # if __name__ == "__main__":
@@ -101,8 +107,10 @@ class PhaseNoiseCompensator:
         numerator = tf.reduce_sum(received_ptrs * conj_transmitted_ptrs, axis=-1)
         denominator = tf.reduce_sum(tf.abs(transmitted_ptrs) ** 2, axis=-1)
         
+        # Cast denominator to tf.complex64 for division
+        denominator = tf.cast(denominator, dtype=tf.complex64)
         # Compute the average phase error for each group
-        phase_error = tf.math.angle(numerator / denominator)
+        phase_error = tf.math.angle(numerator / denominator*self.num_ptrs_per_group)
         return phase_error
 
     def interpolate_phase_error(self, phase_error, num_data_symbols):
@@ -135,6 +143,10 @@ class PhaseNoiseCompensator:
         Returns:
             Phase-compensated signal (tensor of shape [batch_size, num_symbols]).
         """
+        # Cast interpolated phase error to complex64
+        interpolated_phase_error = tf.cast(interpolated_phase_error, dtype=tf.complex64)
+
+
         phase_correction = tf.exp(-1j * interpolated_phase_error)
         compensated_signal = received_signal * phase_correction
         return compensated_signal

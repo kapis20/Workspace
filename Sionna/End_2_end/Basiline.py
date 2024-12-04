@@ -41,7 +41,7 @@ import pickle
 ###############################################
 from PN_models_new import PhaseNoise
 from Cyclic_Prefix import CyclicPrefix
-from PTRS_pilots import PTRSPilotInserter
+from PTRS_pilots import PTRSPilotInserter, PhaseNoiseCompensator
 
 ###############################################
 # SNR range for evaluation and training [dB]
@@ -214,6 +214,11 @@ class Baseline(Model): # Inherits from Keras Model
             alpha_pn = [1.0,2.95]
         )
 
+        #########################################
+        # Phase noise compensator 
+        #########################################
+        self.phase_compensator = PhaseNoiseCompensator(Nzc_PTRS)
+
     tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
@@ -230,8 +235,10 @@ class Baseline(Model): # Inherits from Keras Model
         # PTRS pilots 
         #############################
         tf.print("signal without PTRS",tf.shape(x))
-        x_PTRS = self.PTRS.add_ptrs_to_blocks(x)
+        x_PTRS, transmitted_ptrs = self.PTRS.add_ptrs_to_blocks(x)
         tf.print("signal wiht PTRS",tf.shape(x_PTRS))
+        tf.print("shape of transmitted PTRS:",tf.shape(transmitted_ptrs))
+
         #Add cyclic prefix 
         x_with_cp = self.cp.add_cp(x_PTRS)
         tf.print("signal after cp",tf.shape(x_with_cp))
@@ -284,11 +291,27 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         #Remove CP 
         y_ds_no_cp = self.cp.remove_cp(y_ds)
-
+        tf.print("Shape of signal is", tf.shape(y_ds_no_cp))
         ###########################
         # PN compensation 
         ###########################
-        tf.print("Shape of signal is", tf.shape(y_ds_no_cp))
+        #extract received PTRS 
+        received_blocks = tf.split(y_ds_no_cp, self.PTRS.Q, axis=1)
+        tf.print("Shape of received blocks:",tf.shape(received_blocks))
+        received_ptrs = tf.stack(
+        [block[:, :self.PTRS.Nzc_PTRS] for block in received_blocks],
+        axis=1
+            )  # Shape: [batch_size, Q, Nzc_PTRS]
+        tf.print("Shape of received PTRS:",tf.shape(received_ptrs))
+
+        phase_error = self.phase_compensator.calculate_phase_error(received_ptrs, transmitted_ptrs)
+        tf.print("Shape of phase erros is", tf.shape(phase_error))
+        interpolated_phase_error = self.phase_compensator.interpolate_phase_error(phase_error, tf.shape(y_ds_no_cp)[-1])
+        tf.print("Shape of interpolated phase errpr is", tf.shape(interpolated_phase_error))
+        y_compensated = self.phase_compensator.compensate_phase_noise(y_ds_no_cp, interpolated_phase_error)
+        tf.print("Shape of compensated signal is", tf.shape(y_compensated))
+
+        
         llr_ch = self.demapper([y_ds_no_cp,no])
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
