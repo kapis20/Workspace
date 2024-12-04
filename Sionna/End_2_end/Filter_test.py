@@ -178,7 +178,7 @@ print("Fiurst 10 tensor values:", x_rrcf.numpy()[:10])
 phase_noise_generator = PhaseNoise()
 num_samples_per_sequence1 = tf.shape(x_rrcf)[1].numpy()  # Total samples: 4308
 #tf.print("Shape of num_samples_per_sequence1", num_samples_per_sequence1)
-sampling_rate = 31.44e9  # Example sampling rate (16 GHz, adjust as needed)
+sampling_rate = 15e9  # Example sampling rate (16 GHz, adjust as needed)
 
 # Generate phase noise for each sequence in the batch
 phase_noise_samples = []

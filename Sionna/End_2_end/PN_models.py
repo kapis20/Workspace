@@ -46,6 +46,9 @@ class PhaseNoise:
         :param sampling_rate: Sampling rate in Hz.
         :return: Tensor of time-domain phase noise samples.
         """
+         # Convert num_samples to an integer if it's a TensorFlow tensor
+        if isinstance(num_samples, tf.Tensor):
+            num_samples = int(num_samples.numpy())
         # Frequency axis
         f_axis = np.fft.fftfreq(num_samples, d=1/sampling_rate)  # Frequency bins
         f_axis = np.abs(f_axis)  # Consider positive frequencies only for PSD
@@ -125,23 +128,7 @@ class ReceiverPhaseNoise:
         return psd
 
 
-from scipy.signal import welch
 
-# Initialize receiver PN model
-receiver_pn = ReceiverPhaseNoise()
-
-# Frequency range for PSD
-f = np.logspace(2, 10, 1000)  # From 100 Hz to 10 GHz
-psd_values = [receiver_pn.compute_psd(freq) for freq in f]
-
-# Plot PSD
-import matplotlib.pyplot as plt
-plt.semilogx(f, 10 * np.log10(psd_values))
-plt.title("Receiver Phase Noise PSD")
-plt.xlabel("Frequency (Hz)")
-plt.ylabel("PSD (dB/Hz)")
-plt.grid()
-plt.show()
 
 # phase_noise_generator = PhaseNoise()
 # # Generate phase noise

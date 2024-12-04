@@ -36,6 +36,10 @@ matplotlib.use('TkAgg')  # Alternatively, try 'Agg' if you're not displaying the
 import numpy as np
 import pickle
 
+###############################################
+# Custom imports 
+###############################################
+from PN_models import PhaseNoise
 
 ###############################################
 # SNR range for evaluation and training [dB]
@@ -49,7 +53,7 @@ ebno_db_max = 18.0
 num_bits_per_symbol = 6 # Baseline is 64-QAM
 #modulation_order = 2**num_bits_per_symbol
 coderate = 0.75 #0.75 # Coderate for the outer code
-n = 4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
+n = 3648 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
@@ -58,6 +62,25 @@ beta = 0.3 # Roll-off factor
 span_in_symbols = 32 # Filter span in symbold
 samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling factor
 #batch size = 10 
+# PTRS 
+# PTRS and RPN parameters for 120 GHz
+Nzc_PTRS = 4  # Length of Zadoff-Chu sequence for PTRS
+Nzc_RPN = 1   # Length of Zadoff-Chu sequence for RPN
+u_PTRS = 1    # Root index for PTRS
+u_RPN = 2     # Root index for RPN
+# both 120 and 220 
+Q = 32  # Number of Q blocks
+
+# Phase noise 
+PSD0_dB = -72, #dB
+f_carrier = 120e9
+f_ref = 20e9
+fz = [3e4, 1.75e7]
+fp = [10.3e5]
+alpha_zn = [1.4,2.55]
+alpha_pn = [1.0,2.95]
+
+
 #Other parametes:
 
 BATCH_SIZE = 10#10 #how many examples are processed by sionna in parallel 
@@ -155,7 +178,19 @@ class Baseline(Model): # Inherits from Keras Model
                 cn_type="boxplus-phi",      # Use stable, numerical single parity check function
                 hard_out= False,             # Use soft-output decoding
                 num_iter=num_iter           # Number of BP iterations
-    )
+            )
+        ########################################
+        # Phase noise 
+        ########################################
+        self.phase_noise = PhaseNoise(
+            PSD0_dB = -72, #dB
+            f_carrier = 120e9,
+            f_ref = 20e9,
+            fz = [3e4, 1.75e7],
+            fp = [10.3e5],
+            alpha_zn = [1.4,2.55],
+            alpha_pn = [1.0,2.95]
+        )
 
     #@tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
@@ -187,6 +222,27 @@ class Baseline(Model): # Inherits from Keras Model
         # Store only constellation data after mapping
         # Append ebno_db and constellation data as tuple to list
         # constellation_data_list.append((float(ebno_db), x))
+
+        ############################
+        # Phase noise - transmitter 
+        ############################
+        tf.print("signal with PAPR ", tf.shape(x_rrcf))
+        sampling_rate = samples_per_symbol * 1 / (span_in_symbols / f_carrier)
+        num_samples = tf.shape(x_rrcf)[-1]
+        print("num of samples is",num_samples)
+        phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
+        # Expand phase noise to cover all batches
+        phase_noise_samples = tf.tile(
+            tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
+            )  # Shape: [batch_size, num_samples]
+        tf.print("shape of phase noise samples is:",tf.shape(phase_noise_samples))
+        # Convert phase_noise_samples to complex type
+        phase_noise_complex = tf.exp(
+            tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
+            )  # Convert to complex64 phase noise
+        tf.print("Shape of phase noise complex",tf.shape(phase_noise_complex))
+        x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
+        tf.print("signal with PAPR and phase noise is", tf.shape(x_rrcf))
         ##############################
         # Channel 
         ##############################
@@ -238,7 +294,7 @@ model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
