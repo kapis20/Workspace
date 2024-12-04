@@ -224,6 +224,50 @@ def plot_baseline_ber_bler(file_names, papr_limits):
     plt.savefig("ber_bler_baseline_papr_plot.png")
     plt.show()
 
+def plot_single_baseline_ber_bler(file_name, papr_limit):
+    """
+    Plots BER and BLER for a single baseline result file with a specified PAPR limit.
+    
+    Parameters:
+        file_name (str): File path to the baseline result file.
+        papr_limit (float): The PAPR limit for the result file.
+    """
+    import matplotlib.pyplot as plt
+    import pickle
+
+    # Load data from the file
+    with open(file_name, 'rb') as f:
+        baseline_results = pickle.load(f)
+
+    # Extract baseline data
+    ebno_dbs_baseline = baseline_results['ebno_dbs']['baseline']
+    BLER_baseline = baseline_results['BLER']['baseline']
+    BER_baseline = baseline_results['BER']['baseline']
+
+    # Create a figure with two subplots, one for BER and one for BLER
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+
+    # Plot BER
+    ax1.semilogy(ebno_dbs_baseline, BER_baseline, label=f"BER - Baseline (PAPR={papr_limit})")
+    ax1.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
+    ax1.set_ylabel("BER")
+    ax1.grid(which="both", linestyle='--', linewidth=0.5)
+    ax1.legend()
+    ax1.set_ylim((1e-5, 1))
+
+    # Plot BLER
+    ax2.semilogy(ebno_dbs_baseline, BLER_baseline, label=f"BLER - Baseline (PAPR={papr_limit})")
+    ax2.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
+    ax2.set_xlabel(r"$E_b/N_0$ (dB)")
+    ax2.set_ylabel("BLER")
+    ax2.grid(which="both", linestyle='--', linewidth=0.5)
+    ax2.legend()
+    ax2.set_ylim((1e-5, 1))
+
+    # Adjust layout and save
+    plt.tight_layout()
+    plt.savefig(f"ber_bler_baseline_papr_{papr_limit}_plot.png")
+    plt.show()
 
 
 
@@ -249,11 +293,13 @@ def plot_baseline_ber_bler(file_names, papr_limits):
 # plot_loss_function("loss_values.pkl","loss_values_plot.png")
 
 # Example usage
-file_names = [
-    'bler_results_baseline5_5.pkl',
-    'bler_results_baseline6_0.pkl',
-    'bler_results_baseline6_5.pkl'
-]
-papr_limits = [5.5, 6.0, 6.5]
+# file_names = [
+#     'bler_results_baseline5_5.pkl',
+#     'bler_results_baseline6_0.pkl',
+#     'bler_results_baseline6_5.pkl'
+# ]
+# papr_limits = [5.5, 6.0, 6.5]
 
-plot_baseline_ber_bler(file_names, papr_limits)
+# plot_baseline_ber_bler(file_names, papr_limits)
+
+plot_single_baseline_ber_bler('bler_results_baseline.pkl',5.5)

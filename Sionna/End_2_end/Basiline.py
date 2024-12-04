@@ -231,7 +231,7 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         # ACLR constraint 
         ############################
-        x_rrcf = enforce_PAPR_Constraints(x_rrcf,1)
+        x_rrcf = enforce_PAPR_Constraints(x_rrcf,5.5)
         # Store only constellation data after mapping
         # Append ebno_db and constellation data as tuple to list
         # constellation_data_list.append((float(ebno_db), x))
@@ -304,7 +304,7 @@ model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
