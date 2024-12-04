@@ -38,6 +38,7 @@ class PhaseNoise:
         :param f: Frequency offset array (in Hz).
         :return: Phase noise PSD in dB/Hz.
         """
+        f = tf.cast(f, dtype=tf.float64)  # Ensure f is float64
         numerator = tf.reduce_prod([1 + (f / fz_i)**alpha for fz_i, alpha in zip(self.fz, self.alpha_zn)], axis=0)
         denominator = tf.reduce_prod([1 + (f / fp_i)**alpha for fp_i, alpha in zip(self.fp, self.alpha_pn)], axis=0)
         psd = self.PSD0 * (numerator / denominator)
@@ -79,7 +80,7 @@ class PhaseNoise:
         )
         
         # Apply the square root of the PSD as a filter
-        psd_filter = tf.sqrt(tf.convert_to_tensor(psd_linear, dtype=tf.float32))
+        psd_filter = tf.sqrt(psd_linear)
         noise_freq_domain = tf.signal.fft(noise)
         filtered_noise_freq = noise_freq_domain * tf.cast(psd_filter, tf.complex64)
         
