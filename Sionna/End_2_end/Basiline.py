@@ -261,15 +261,20 @@ class Baseline(Model): # Inherits from Keras Model
         # constellation_data_list.append((float(ebno_db), x))
 
         ############################
-        # Phase noise - transmitter 
-        ############################
+        #Phase noise - transmitter 
+        ###########################
+        # Print the PSD values
+        
         sampling_rate = samples_per_symbol * 1 / (span_in_symbols / f_carrier)
         num_samples = tf.shape(x_rrcf)[-1]
+        num_samples_float = tf.cast(num_samples, tf.float32)
         phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
         # Expand phase noise to cover all batches
         phase_noise_samples = tf.tile(
             tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
             )  # Shape: [batch_size, num_samples]
+        variance = tf.reduce_mean(tf.square(phase_noise_samples))
+       
         # Convert phase_noise_samples to complex type
         phase_noise_complex = tf.exp(
             tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
@@ -330,6 +335,45 @@ class Baseline(Model): # Inherits from Keras Model
         llr_de = tf.reshape(llr_de, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         decoded_bits = self.decoder(llr_de)
         #tf.print("Shape of decoded bits", tf.shape(decoded_bits))
+        # tf.print("Transmitted PTRS:", transmitted_ptrs)
+        # tf.print("Received PTRS:", received_ptrs)
+        # Print Transmitted and Received PTRS for the first batch and first block
+        
+        # tf.print("shape ydnocp", tf.shape(y_ds_no_cp))
+        # tf.print("Phase Error (First Few Groups):", phase_error[0, :5])
+        # plt.plot(phase_error[0, :].numpy(), label="Phase Error (Group Level)")
+        # plt.plot(interpolated_phase_error[0, :].numpy(), label="Interpolated Phase Error (Symbol Level)")
+        # plt.legend()
+        # plt.title("Phase Error vs. Interpolated Phase Error")
+        # plt.show()
+
+        # # Convert TensorFlow tensors to NumPy for plotting
+        # transmitted_ptrs_np = transmitted_ptrs.numpy()
+        # received_ptrs_np = received_ptrs.numpy()
+
+        # # Plot real and imaginary parts of Transmitted PTRS (Subset)
+        # plt.figure(figsize=(12, 6))
+        # plt.subplot(2, 1, 1)
+        # plt.plot(transmitted_ptrs_np[0, 0, :].real, label='Real Part')
+        # plt.plot(transmitted_ptrs_np[0, 0, :].imag, label='Imaginary Part')
+        # plt.title('Transmitted PTRS (First Block)')
+        # plt.legend()
+
+        # # Plot real and imaginary parts of Received PTRS (Subset)
+        # plt.subplot(2, 1, 2)
+        # plt.plot(received_ptrs_np[0, 0, :].real, label='Real Part')
+        # plt.plot(received_ptrs_np[0, 0, :].imag, label='Imaginary Part')
+        # plt.title('Received PTRS (First Block)')
+        # plt.legend()
+
+        # plt.tight_layout()
+        # plt.show()
+        # # Convert to NumPy and print the first block
+        # transmitted_signal_np = x_PTRS.numpy()
+        # print("Transmitted signal (First Block, First Symbols):", transmitted_signal_np[0, :10])
+        # # tf.print("Transmitted signal (First Block):", x_PTRS[0, :10])
+
+
         return uncoded_bits, decoded_bits
 
 

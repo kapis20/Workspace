@@ -80,7 +80,10 @@ class PhaseNoise:
         )
         
         # Apply the square root of the PSD as a filter
-        psd_filter = tf.sqrt(psd_linear)
+        # Normalize the PSD filter
+        psd_filter = tf.sqrt(psd_linear / tf.reduce_sum(psd_linear))
+
+        #psd_filter = tf.sqrt(psd_linear)
         noise_freq_domain = tf.signal.fft(noise)
         filtered_noise_freq = noise_freq_domain * tf.cast(psd_filter, tf.complex64)
         
