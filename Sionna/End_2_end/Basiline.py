@@ -41,6 +41,7 @@ import pickle
 ###############################################
 from PN_models_new import PhaseNoise
 from Cyclic_Prefix import CyclicPrefix
+from PTRS_pilots import PTRSPilotInserter
 
 ###############################################
 # SNR range for evaluation and training [dB]
@@ -159,6 +160,16 @@ class Baseline(Model): # Inherits from Keras Model
         self.mapper = Mapper(constellation=self.constellation)
 
         ########################################
+        # PTRS pilots
+        ########################################
+        self.PTRS = PTRSPilotInserter(
+            Nzc_PTRS = Nzc_PTRS,
+            u_PTRS = u_PTRS,
+            Q = Q,
+            batch_size = BATCH_SIZE,
+            num_symbols_per_codeword = num_symbols_per_codeword
+        )
+        ########################################
         # Cyclic prefix 
         ########################################
         self.cp = CyclicPrefix(cp_ratio,n)
@@ -203,7 +214,7 @@ class Baseline(Model): # Inherits from Keras Model
             alpha_pn = [1.0,2.95]
         )
 
-    @tf.function(jit_compile=True) # Enable graph execution to speed things up
+    #@tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
@@ -215,8 +226,15 @@ class Baseline(Model): # Inherits from Keras Model
         bits_e = self.encoder(uncoded_bits)
         bits_i = self.interleaver(bits_e)
         x = self.mapper(bits_i)
+        #############################
+        # PTRS pilots 
+        #############################
+        tf.print("X before pilots:",tf.shape(x))
+
+        x_PTRS = self.PTRS.add_ptrs_to_blocks(x)
+        tf.print("XPTRS ",tf.shape(x_PTRS))
         #Add cyclic prefix 
-        x_with_cp = self.cp.add_cp(x)
+        x_with_cp = self.cp.add_cp(x_PTRS)
         ############################
         #Filter and sampling
         ############################
@@ -304,7 +322,7 @@ model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()

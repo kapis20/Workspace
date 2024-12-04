@@ -5,7 +5,7 @@ import time # to monitor time execution of model
 import os
 import sionna
 
-import tensorflow as tf
+
 
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Layer, Dense
