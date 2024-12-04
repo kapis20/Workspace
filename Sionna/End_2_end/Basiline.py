@@ -239,18 +239,18 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         # Phase noise - transmitter 
         ############################
-        sampling_rate = samples_per_symbol * 1 / (span_in_symbols / f_carrier)
-        num_samples = tf.shape(x_rrcf)[-1]
-        phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
-        # Expand phase noise to cover all batches
-        phase_noise_samples = tf.tile(
-            tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
-            )  # Shape: [batch_size, num_samples]
-        # Convert phase_noise_samples to complex type
-        phase_noise_complex = tf.exp(
-            tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
-            )  # Convert to complex64 phase noise
-        x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
+        # sampling_rate = samples_per_symbol * 1 / (span_in_symbols / f_carrier)
+        # num_samples = tf.shape(x_rrcf)[-1]
+        # phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
+        # # Expand phase noise to cover all batches
+        # phase_noise_samples = tf.tile(
+        #     tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
+        #     )  # Shape: [batch_size, num_samples]
+        # # Convert phase_noise_samples to complex type
+        # phase_noise_complex = tf.exp(
+        #     tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
+        #     )  # Convert to complex64 phase noise
+        # x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
         ##############################
         # Channel 
         ##############################
