@@ -70,7 +70,7 @@ class PhaseNoise:
         f_axis = tf.where(f_axis > sampling_rate / 2, f_axis - sampling_rate, f_axis)  # Wrap negative frequencies
         f_axis = tf.abs(f_axis)  # Consider positive frequencies only for PSD
         # Compute PSD values for the frequency axis
-        psd_linear = tf.pow(10.0, self.compute_psd(f_axis) / 10.0)
+        psd_linear = tf.pow(tf.constant(10.0, dtype=tf.float64), self.compute_psd(f_axis) / 10.0)
         #psd_linear = 10**(self.compute_psd(f_axis) / 10)  # Convert PSD to linear scale
         
         # Generate white Gaussian noise in the frequency domain
