@@ -83,7 +83,7 @@ PSD0_dB = -72, #dB
 f_carrier = 120e9
 f_ref = 20e9
 fz = [3e4, 1.75e7]
-fp = [10.3e5]
+fp = [10, 3e5]
 alpha_zn = [1.4,2.55]
 alpha_pn = [1.0,2.95]
 
@@ -347,7 +347,7 @@ model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
