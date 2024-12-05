@@ -266,7 +266,7 @@ class Baseline(Model): # Inherits from Keras Model
         # Print the PSD values
         sampling_rate = int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))  # Dynamic sampling rate
         num_samples = tf.shape(x_rrcf)[-1]
-        num_samples = tf.cast(num_samples, tf.int32).numpy()  # Convert to integer
+        num_samples = tf.cast(num_samples, tf.int32)#.numpy()  # Convert to integer
         phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
         # Expand phase noise to cover all batches
     
