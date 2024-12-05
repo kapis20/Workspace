@@ -322,58 +322,9 @@ class Baseline(Model): # Inherits from Keras Model
         llr_ch = self.demapper([data_only_signal,no])
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
-        # tf.print("Sahoe after bits are generated:", tf.shape(uncoded_bits))
-        #tf.print("Shape after encoder", tf.shape(bits_e))
-        # tf.print("shape after interleaver", tf.shape(bits_i))
-        # tf.print("Shape after mapper:", tf.shape(x))
-        # tf.print("Shape after upsampling:", tf.shape(x_us))
-        # tf.print("Shape after tx filtering and PAPR:", tf.shape(x_rrcf))
-        # tf.print("Shape after rx filtering:", tf.shape(y_mf))
-        # tf.print("Shape after downsampling:", tf.shape(y_ds))
-        # tf.print("Shape after demapper:", tf.shape(llr_ch))
-        # tf.print("Shape after deinterleaver:", tf.shape(llr_de))
-        #llr_de_r = tf.reshape(llr_de, [batch_size, n])
-        #tf.print("Shape after reshaped deinterleaver:", tf.shape(llr_de_r))
+ 
         llr_de = tf.reshape(llr_de, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         decoded_bits = self.decoder(llr_de)
-        #tf.print("Shape of decoded bits", tf.shape(decoded_bits))
-        # tf.print("Transmitted PTRS:", transmitted_ptrs)
-        # tf.print("Received PTRS:", received_ptrs)
-        # Print Transmitted and Received PTRS for the first batch and first block
-        
-        # tf.print("shape ydnocp", tf.shape(y_ds_no_cp))
-        # tf.print("Phase Error (First Few Groups):", phase_error[0, :5])
-        # plt.plot(phase_error[0, :].numpy(), label="Phase Error (Group Level)")
-        # plt.plot(interpolated_phase_error[0, :].numpy(), label="Interpolated Phase Error (Symbol Level)")
-        # plt.legend()
-        # plt.title("Phase Error vs. Interpolated Phase Error")
-        # plt.show()
-
-        # # Convert TensorFlow tensors to NumPy for plotting
-        # transmitted_ptrs_np = transmitted_ptrs.numpy()
-        # received_ptrs_np = received_ptrs.numpy()
-
-        # # Plot real and imaginary parts of Transmitted PTRS (Subset)
-        # plt.figure(figsize=(12, 6))
-        # plt.subplot(2, 1, 1)
-        # plt.plot(transmitted_ptrs_np[0, 0, :].real, label='Real Part')
-        # plt.plot(transmitted_ptrs_np[0, 0, :].imag, label='Imaginary Part')
-        # plt.title('Transmitted PTRS (First Block)')
-        # plt.legend()
-
-        # # Plot real and imaginary parts of Received PTRS (Subset)
-        # plt.subplot(2, 1, 2)
-        # plt.plot(received_ptrs_np[0, 0, :].real, label='Real Part')
-        # plt.plot(received_ptrs_np[0, 0, :].imag, label='Imaginary Part')
-        # plt.title('Received PTRS (First Block)')
-        # plt.legend()
-
-        # plt.tight_layout()
-        # plt.show()
-        # # Convert to NumPy and print the first block
-        # transmitted_signal_np = x_PTRS.numpy()
-        # print("Transmitted signal (First Block, First Symbols):", transmitted_signal_np[0, :10])
-        # # tf.print("Transmitted signal (First Block):", x_PTRS[0, :10])
 
 
         return uncoded_bits, decoded_bits
