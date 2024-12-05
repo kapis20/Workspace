@@ -264,11 +264,13 @@ class Baseline(Model): # Inherits from Keras Model
         #Phase noise - transmitter 
         ###########################
         # Print the PSD values
-        
-        sampling_rate = 15000000000 #int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))
+        sampling_rate = int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))  # Dynamic sampling rate
+        #sampling_rate = 15000000000 #int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))
         print("sampling rate is",sampling_rate)
-        num_samples = 4028 
-        #num_samples = tf.shape(x_rrcf)[-1]
+        #num_samples = 4028 
+        num_samples = tf.shape(x_rrcf)[-1]
+        num_samples = tf.cast(num_samples, tf.int32).numpy()  # Convert to integer
+        print("Dynamic number of samples is", num_samples)
         #num_samples_float = tf.cast(num_samples, tf.float32)
         phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
         # Expand phase noise to cover all batches
