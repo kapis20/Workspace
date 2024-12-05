@@ -209,7 +209,7 @@ class Baseline(Model): # Inherits from Keras Model
             f_carrier = 120e9,
             f_ref = 20e9,
             fz = [3e4, 1.75e7],
-            fp = [10.3e5],
+            fp = [10, 3e5],
             alpha_zn = [1.4,2.55],
             alpha_pn = [1.0,2.95]
         )
@@ -219,7 +219,7 @@ class Baseline(Model): # Inherits from Keras Model
         #########################################
         self.phase_compensator = PhaseNoiseCompensator(Nzc_PTRS)
 
-    @tf.function(jit_compile=True) # Enable graph execution to speed things up
+    #@tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
@@ -265,16 +265,77 @@ class Baseline(Model): # Inherits from Keras Model
         ###########################
         # Print the PSD values
         
-        sampling_rate = samples_per_symbol * 1 / (span_in_symbols / f_carrier)
-        num_samples = tf.shape(x_rrcf)[-1]
-        num_samples_float = tf.cast(num_samples, tf.float32)
+        sampling_rate = 15000000000 #int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))
+        print("sampling rate is",sampling_rate)
+        num_samples = 4028 
+        #num_samples = tf.shape(x_rrcf)[-1]
+        #num_samples_float = tf.cast(num_samples, tf.float32)
         phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
         # Expand phase noise to cover all batches
+        tf.print("Shape of phase noise samples single is:",tf.shape(phase_noise_samples_single))
+        
         phase_noise_samples = tf.tile(
             tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
             )  # Shape: [batch_size, num_samples]
-        variance = tf.reduce_mean(tf.square(phase_noise_samples))
+
+      
+
        
+
+        # Initialize an array to store PSDs for each batch
+        psd_batches = []
+
+        # Compute PSD for each batch
+        for i in range(batch_size):
+            noise = phase_noise_samples[i]
+            freqs = np.fft.fftfreq(num_samples, 1/sampling_rate)
+            psd = np.abs(np.fft.fft(noise))**2 / num_samples
+            psd_batches.append(psd)
+
+        # Average PSD across all batches
+        psd_average = np.mean(psd_batches, axis=0)
+
+        # Positive frequencies
+        freqs_positive = freqs[:num_samples // 2]
+        psd_average_positive = psd_average[:num_samples // 2]
+        psd_theoretical = self.phase_noise.compute_psd(freqs_positive).numpy()
+
+        # Plot
+        plt.figure(figsize=(10, 6))
+        plt.semilogx(freqs_positive, 10 * np.log10(psd_average_positive), label="Averaged PSD", color="blue")
+        plt.semilogx(freqs_positive, psd_theoretical, label="Theoretical PSD", linestyle="--", color="orange")
+        plt.xlabel("Frequency Offset (Hz)")
+        plt.ylabel("PSD (dBc/Hz)")
+        plt.title("Averaged PSD vs Theoretical PSD (Multiple Batches)")
+        plt.legend()
+        plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+        plt.show()
+        # Plot comparison
+        # Compute FFT and PSD
+        # Frequency domain analysis
+        # freqs = np.fft.fftfreq(num_samples, 1/sampling_rate)  # Frequency bins
+        # freqs_positive = freqs[:num_samples // 2] # Positive frequencies
+
+        # # Compute PSD of the generated noise
+        # #fft_values = np.fft.fft(phase_noise_samples_single.numpy())
+        # psd_generated = np.abs(np.fft.fft(phase_noise_samples_single.numpy()))**2 / num_samples
+        # psd_generated_dB = 10 * np.log10(psd_generated[:num_samples // 2])  # dB scale PSD
+        # print("Generated phase noise (main):", phase_noise_samples_single.numpy())
+
+        # # Compute theoretical PSD for comparison
+        # psd_theoretical = self.phase_noise.compute_psd(freqs_positive).numpy()  # Linear scale in dB/Hz
+        # print("PhaseNoise parameters (main):", vars(self.phase_noise))
+        # # Plotting
+        # plt.figure(figsize=(10, 6))
+        # plt.semilogx(freqs_positive, psd_generated_dB, label="Generated PSD", color="blue")
+        # plt.semilogx(freqs_positive, psd_theoretical, label="Theoretical PSD", linestyle="--", color="orange")
+        # plt.xlabel("Frequency Offset (Hz)")
+        # plt.ylabel("PSD (dBc/Hz)")
+        # plt.title("Generated vs Theoretical PSD")
+        # plt.legend()
+        # plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+        # plt.show()
+
         # Convert phase_noise_samples to complex type
         phase_noise_complex = tf.exp(
             tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
@@ -394,7 +455,7 @@ model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()

@@ -81,9 +81,9 @@ class PhaseNoise:
         
         # Apply the square root of the PSD as a filter
         # Normalize the PSD filter
-        psd_filter = tf.sqrt(psd_linear / tf.reduce_sum(psd_linear))
+        #psd_filter = tf.sqrt(psd_linear / tf.reduce_sum(psd_linear))
 
-        #psd_filter = tf.sqrt(psd_linear)
+        psd_filter = tf.sqrt(psd_linear)
         noise_freq_domain = tf.signal.fft(noise)
         filtered_noise_freq = noise_freq_domain * tf.cast(psd_filter, tf.complex64)
         
@@ -91,7 +91,7 @@ class PhaseNoise:
         phase_noise = tf.signal.ifft(filtered_noise_freq)
         return tf.math.real(phase_noise)  # Return real part
 # # Instantiate the PhaseNoise class with default parameters
-# phase_noise = PhaseNoise()
+phase_noise_model = PhaseNoise()
 
 # # Compute the PSD for the default frequency range
 # frequency_offsets = phase_noise.f  # Default frequency range
@@ -106,4 +106,35 @@ class PhaseNoise:
 # plt.title("Phase Noise PSD vs Frequency Offset")
 # plt.grid(True, which="both", linestyle="--", linewidth=0.5)
 # plt.legend()
+# # plt.show()
+
+
+# import numpy as np
+# # # Parameters for generation
+# num_samples = 4028  # Large number of samples for good frequency resolution
+# sampling_rate = 15000000000  # Sampling rate of 1 GHz
+
+# # Generate phase noise
+# generated_noise = phase_noise_model.generate_phase_noise(num_samples, sampling_rate)
+
+# # Compute FFT and PSD
+# freqs = np.fft.fftfreq(num_samples, 1/sampling_rate)
+# psd_generated = np.abs(np.fft.fft(generated_noise.numpy()))**2 / num_samples
+
+# # Compute theoretical PSD for comparison
+# freqs_positive = freqs[:num_samples // 2]  # Positive frequencies
+# psd_theoretical = phase_noise_model.compute_psd(freqs_positive).numpy()
+
+# # Plot comparison
+# plt.figure(figsize=(10, 6))
+# plt.semilogx(freqs_positive, 10 * np.log10(psd_generated[:num_samples // 2]), label="Generated PSD")
+# plt.semilogx(freqs_positive, psd_theoretical, label="Theoretical PSD", linestyle="--")
+# plt.xlabel("Frequency Offset (Hz)")
+# plt.ylabel("PSD (dBc/Hz)")
+# plt.title("Generated vs Theoretical PSD")
+# plt.legend()
+# plt.grid()
 # plt.show()
+
+# print("Generated phase noise (standalone):", generated_noise.numpy())
+# print("PhaseNoise parameters (standalone):", vars(phase_noise_model))
