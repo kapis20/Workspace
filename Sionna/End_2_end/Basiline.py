@@ -265,13 +265,8 @@ class Baseline(Model): # Inherits from Keras Model
         ###########################
         # Print the PSD values
         sampling_rate = int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))  # Dynamic sampling rate
-        #sampling_rate = 15000000000 #int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))
-        print("sampling rate is",sampling_rate)
-        #num_samples = 4028 
         num_samples = tf.shape(x_rrcf)[-1]
         num_samples = tf.cast(num_samples, tf.int32).numpy()  # Convert to integer
-        print("Dynamic number of samples is", num_samples)
-        #num_samples_float = tf.cast(num_samples, tf.float32)
         phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
         # Expand phase noise to cover all batches
         tf.print("Shape of phase noise samples single is:",tf.shape(phase_noise_samples_single))
@@ -312,37 +307,45 @@ class Baseline(Model): # Inherits from Keras Model
         plt.legend()
         plt.grid(True, which="both", linestyle="--", linewidth=0.5)
         plt.show()
-        # Plot comparison
-        # Compute FFT and PSD
-        # Frequency domain analysis
-        # freqs = np.fft.fftfreq(num_samples, 1/sampling_rate)  # Frequency bins
-        # freqs_positive = freqs[:num_samples // 2] # Positive frequencies
-
-        # # Compute PSD of the generated noise
-        # #fft_values = np.fft.fft(phase_noise_samples_single.numpy())
-        # psd_generated = np.abs(np.fft.fft(phase_noise_samples_single.numpy()))**2 / num_samples
-        # psd_generated_dB = 10 * np.log10(psd_generated[:num_samples // 2])  # dB scale PSD
-        # print("Generated phase noise (main):", phase_noise_samples_single.numpy())
-
-        # # Compute theoretical PSD for comparison
-        # psd_theoretical = self.phase_noise.compute_psd(freqs_positive).numpy()  # Linear scale in dB/Hz
-        # print("PhaseNoise parameters (main):", vars(self.phase_noise))
-        # # Plotting
-        # plt.figure(figsize=(10, 6))
-        # plt.semilogx(freqs_positive, psd_generated_dB, label="Generated PSD", color="blue")
-        # plt.semilogx(freqs_positive, psd_theoretical, label="Theoretical PSD", linestyle="--", color="orange")
-        # plt.xlabel("Frequency Offset (Hz)")
-        # plt.ylabel("PSD (dBc/Hz)")
-        # plt.title("Generated vs Theoretical PSD")
-        # plt.legend()
-        # plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-        # plt.show()
-
+ 
         # Convert phase_noise_samples to complex type
         phase_noise_complex = tf.exp(
             tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
             )  # Convert to complex64 phase noise
         x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
+
+        tf.print("Shape of phase_noise_complex is:", tf.shape(phase_noise_complex))
+
+
+        tf.print("Shape of x_rrcf_noisy is:", tf.shape(x_rrcf))
+         # Initialize an array to store PSDs for each batch
+        psd_batchescompex = []
+
+        # Compute PSD for each batch
+        for i in range(batch_size):
+            noise = phase_noise_complex[i]
+            freqs = np.fft.fftfreq(num_samples, 1/sampling_rate)
+            psd_complex = np.abs(np.fft.fft(noise))**2 / num_samples
+            psd_batchescompex.append(psd_complex)
+         # Average PSD across all batches
+        psd_average_complex = np.mean(psd_batchescompex, axis=0)
+        # Verification step
+        # Compute the FFT of the noisy signal
+        # Positive frequencies
+        freqs_positive_complex = freqs[:num_samples // 2]
+        psd_average_positive_complex = psd_average_complex[:num_samples // 2]
+        psd_theoretical_complex = self.phase_noise.compute_psd(freqs_positive_complex).numpy()
+
+        # Plot
+        plt.figure(figsize=(10, 6))
+        plt.semilogx(freqs_positive_complex, 10 * np.log10(psd_average_positive_complex), label="Averaged PSD (Noisy Signal)", color="blue")
+        plt.semilogx(freqs_positive_complex, psd_theoretical_complex, label="Theoretical PSD", linestyle="--", color="orange")
+        plt.xlabel("Frequency Offset (Hz)")
+        plt.ylabel("PSD (dBc/Hz)")
+        plt.title("Averaged PSD vs Theoretical PSD (Noisy Signal)")
+        plt.legend()
+        plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+        plt.show()
         ##############################
         # Channel 
         ##############################
