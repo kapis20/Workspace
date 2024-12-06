@@ -78,12 +78,21 @@ class PhaseNoise:
         
         # Transform back to time domain
         phase_noise = tf.signal.ifft(filtered_noise_freq)
+        plt.plot(f_axis.numpy(), self.compute_psd(f_axis).numpy())
+        plt.xlabel("Frequency Offset (Hz)")
+        plt.ylabel("PSD (dB)")
+        plt.title("Generated Phase Noise PSD")
+        plt.grid()
+        plt.show()
+        
+        print("PSD Values (Linear):", psd_linear.numpy())
+        print("PSD Filter:", psd_filter.numpy())
         return tf.math.real(phase_noise)  # Return real part
     
 
 
 # # Instantiate the PhaseNoise class with default parameters
-#phase_noise_model = PhaseNoise()
+phase_noise_model = PhaseNoise()
 
 # # Compute the PSD for the default frequency range
 # frequency_offsets = phase_noise.f  # Default frequency range
@@ -101,32 +110,32 @@ class PhaseNoise:
 # # plt.show()
 
 
-# import numpy as np
-# # # Parameters for generation
-# num_samples = 4028  # Large number of samples for good frequency resolution
-# sampling_rate = 15000000000  # Sampling rate of 1 GHz
+import numpy as np
+# # Parameters for generation
+num_samples = 4028  # Large number of samples for good frequency resolution
+sampling_rate = 8e9  # Sampling rate of 1 GHz
 
-# # Generate phase noise
-# generated_noise = phase_noise_model.generate_phase_noise(num_samples, sampling_rate)
+# Generate phase noise
+generated_noise = phase_noise_model.generate_phase_noise(num_samples, sampling_rate)
 
-# # Compute FFT and PSD
-# freqs = np.fft.fftfreq(num_samples, 1/sampling_rate)
-# psd_generated = np.abs(np.fft.fft(generated_noise.numpy()))**2 / num_samples
+# Compute FFT and PSD
+freqs = np.fft.fftfreq(num_samples, 1/sampling_rate)
+psd_generated = np.abs(np.fft.fft(generated_noise.numpy()))**2 / num_samples
 
-# # Compute theoretical PSD for comparison
-# freqs_positive = freqs[:num_samples // 2]  # Positive frequencies
-# psd_theoretical = phase_noise_model.compute_psd(freqs_positive).numpy()
+# Compute theoretical PSD for comparison
+freqs_positive = freqs[:num_samples // 2]  # Positive frequencies
+psd_theoretical = phase_noise_model.compute_psd(freqs_positive).numpy()
 
-# # Plot comparison
-# plt.figure(figsize=(10, 6))
-# plt.semilogx(freqs_positive, 10 * np.log10(psd_generated[:num_samples // 2]), label="Generated PSD")
-# plt.semilogx(freqs_positive, psd_theoretical, label="Theoretical PSD", linestyle="--")
-# plt.xlabel("Frequency Offset (Hz)")
-# plt.ylabel("PSD (dBc/Hz)")
-# plt.title("Generated vs Theoretical PSD")
-# plt.legend()
-# plt.grid()
-# plt.show()
+# Plot comparison
+plt.figure(figsize=(10, 6))
+plt.semilogx(freqs_positive, 10 * np.log10(psd_generated[:num_samples // 2]), label="Generated PSD")
+plt.semilogx(freqs_positive, psd_theoretical, label="Theoretical PSD", linestyle="--")
+plt.xlabel("Frequency Offset (Hz)")
+plt.ylabel("PSD (dBc/Hz)")
+plt.title("Generated vs Theoretical PSD")
+plt.legend()
+plt.grid()
+plt.show()
 
 # print("Generated phase noise (standalone):", generated_noise.numpy())
 # print("PhaseNoise parameters (standalone):", vars(phase_noise_model))
@@ -191,6 +200,9 @@ class PhaseNoiseGeneratorTF:
         tf.Tensor
             Calculated PSD for the given frequency vector.
         """
+            # Ensure `f` and `k` are of the same dtype
+        f = tf.cast(f, tf.float32)
+        k = tf.cast(k, tf.float32)
         # Convert PSD0 from dB to linear scale: 10^(psd0/10)
         psd_linear = tf.pow(10.0, psd0 / 10.0)
         # Case 1: If fz is infinite (simplified formula)
@@ -220,9 +232,10 @@ class PhaseNoiseGeneratorTF:
         tf.Tensor
             Phase noise PSD values for the given frequency vector.
         """
-        # Separate the frequency vector into low (f <= LBW) and high (f > LBW) ranges
-        f_low = tf.boolean_mask(fvec, fvec <= self.LBW)  # Frequencies below or equal to LBW
-        f_high = tf.boolean_mask(fvec, fvec > self.LBW)  # Frequencies above LBW
+        
+          # Separate the frequency vector into low (f <= LBW) and high (f > LBW) ranges
+        f_low = tf.boolean_mask(fvec, fvec <= tf.cast(self.LBW, fvec.dtype))  # Frequencies below or equal to LBW
+        f_high = tf.boolean_mask(fvec, fvec > tf.cast(self.LBW, fvec.dtype))  # Frequencies above LBW
         
         # Compute the PSD for the low-frequency range (f <= LBW)
         # Low-frequency PSD is the sum of S_Ref(f) and S_PLL(f)
@@ -238,6 +251,49 @@ class PhaseNoiseGeneratorTF:
         )
         #combine the low-frequency and high-frequency PSDs into a single tensor
         return tf.concat([lf_low, lf_high], axis=0)
+
+    def generatePhaseNoiseSamples(self, num_samples, sampling_rate):
+        num_samples_float = tf.cast(num_samples, tf.float32)
+        # Generate the frequency axis
+        # f_axis = tf.range(0, num_samples_float) / num_samples_float * sampling_rate
+        # f_axis = tf.where(f_axis > sampling_rate / 2, f_axis - sampling_rate, f_axis)
+        # f_axis = tf.abs(f_axis)
+        f_axis = tf.concat([
+            tf.linspace(0.0, sampling_rate / 2.0, num_samples // 2 + 1),  # Positive frequencies
+            tf.linspace(-sampling_rate / 2.0, -sampling_rate / num_samples, num_samples // 2)  # Negative frequencies
+        ], axis=0)
+        f_axis = tf.linspace(-sampling_rate / 2.0, sampling_rate / 2.0, num_samples)
+
+        # Compute the PSD (dB and linear scale)
+        psd_values = self.generate_phase_noise_psd(f_axis)
+        psd_linear = tf.pow(tf.constant(10.0, dtype=tf.float32), psd_values / 10.0)
+
+        noise = tf.complex(
+            tf.random.normal([num_samples], mean=0.0, stddev=1.0),
+            tf.random.normal([num_samples], mean=0.0, stddev=1.0)
+        )
+
+
+        psd_filter = tf.sqrt(psd_linear)
+        #psd_filter = psd_filter / tf.sqrt(tf.reduce_sum(psd_filter**2))
+
+        noise_freq_domain = tf.signal.fft(noise)
+        filtered_noise_freq = noise_freq_domain * tf.cast(psd_filter, tf.complex64)
+
+        # Transform back to the time domain
+        phase_noise = tf.math.real(tf.signal.ifft(filtered_noise_freq))
+        phase_noise = phase_noise / tf.sqrt(tf.reduce_mean(phase_noise**2))
+        plt.plot(f_axis.numpy(), psd_values.numpy())
+        plt.xlabel("Frequency Offset (Hz)")
+        plt.ylabel("PSD (dB)")
+        plt.title("Generated Phase Noise PSD")
+        plt.grid()
+        plt.show()
+        print("Frequency Axis (f_axis):", f_axis.numpy())
+        print("PSD Values (dB):", psd_values.numpy())
+        print("PSD Values (Linear):", psd_linear.numpy())
+        print("PSD Filter:", psd_filter.numpy())
+        return phase_noise
 
 
 import numpy as np
@@ -269,13 +325,105 @@ lf_dBc_Hz_220GHz = 10.0 * tf.math.log(lf_220GHz) / tf.math.log(tf.constant(10.0)
 # Plot PSD vs Frequency Offset
 plt.figure(figsize=(8, 6))
 plt.semilogx(fvec.numpy(), lf_dBc_Hz_120GHz.numpy(), label="3GPP UE model 1 @ 120 GHz", color="purple")
-plt.semilogx(fvec.numpy(), lf_dBc_Hz_220GHz.numpy(), label="3GPP UE model 1 @ 220 GHz", color="green")
-plt.semilogx(frequency_offsets.numpy(), psd_values120.numpy(), label="LMX2595 model @ 120 GHz", color="blue")
-plt.semilogx(frequency_offsets.numpy(), psd_values220.numpy(), label="LMX2595 model @ 220 GHz", color="red")
-plt.semilogx(frequency_offsets.numpy(), psd_calues_Ref.numpy(), label="LMX2595 model @ 20 GHz (ref)", color="orange", linestyle ="--")
+#plt.semilogx(fvec.numpy(), lf_dBc_Hz_220GHz.numpy(), label="3GPP UE model 1 @ 220 GHz", color="green")
+#plt.semilogx(frequency_offsets.numpy(), psd_values120.numpy(), label="LMX2595 model @ 120 GHz", color="blue")
+#plt.semilogx(frequency_offsets.numpy(), psd_values220.numpy(), label="LMX2595 model @ 220 GHz", color="red")
+#plt.semilogx(frequency_offsets.numpy(), psd_calues_Ref.numpy(), label="LMX2595 model @ 20 GHz (ref)", color="orange", linestyle ="--")
 plt.xlabel("Frequency Offset [Hz]")
 plt.ylabel("Phase Noise PSD [dBc/Hz]")
 plt.title("Phase Noise PSD vs Frequency Offset for 120 GHz and 220 GHz")
 plt.grid(which="both", linestyle="--", linewidth=0.5)
 plt.legend()
+plt.show()
+
+# # Test parameters
+# num_samples = 4096
+# sample_rate = 120e6
+# signal_tensor = tf.complex(
+#     tf.random.normal([num_samples], mean=0.0, stddev=1.0),
+#     tf.random.normal([num_samples], mean=0.0, stddev=1.0)
+# )
+# phase_noise_generator = PhaseNoiseGeneratorTF()
+
+# # Add phase noise to the signal
+# noisy_signal = phase_noise_generator.add_PN_to_Sig(signal_tensor, sample_rate, phase_noise_generator)
+
+# # Plot original and noisy signals (real parts only for visualization)
+# plt.figure(figsize=(12, 6))
+# plt.plot(tf.math.real(signal_tensor).numpy()[:500], label="Original Signal", alpha=0.7)
+# plt.plot(tf.math.real(noisy_signal).numpy()[:500], label="Signal with Phase Noise", alpha=0.7, linestyle='--')
+# plt.title("Original vs. Phase Noise Impaired Signal")
+# plt.xlabel("Sample Index")
+# plt.ylabel("Amplitude")
+# plt.legend()
+# plt.grid()
+# plt.show()
+
+
+
+# import numpy as np
+# # Test parameters
+# # Initialize the PhaseNoiseGeneratorTF
+# phase_noise_model = PhaseNoiseGeneratorTF()
+
+# # Parameters for generation
+# num_samples = 4096  # Large number of samples for good frequency resolution
+# sampling_rate = 8e9  # 15 GHz sampling rate
+
+# # Generate phase noise
+# signal_tensor = tf.random.normal([num_samples], mean=0.0, stddev=1.0)  # Example signal tensor
+# generated_noise = phase_noise_model.add_PN_to_Sig(signal_tensor, sampling_rate, phase_noise_model)
+
+# # Compute FFT and PSD of the generated noise
+# freqs = np.fft.fftfreq(num_samples, 1 / sampling_rate)  # Frequency axis
+# psd_generated = np.abs(np.fft.fft(generated_noise.numpy()))**2 / num_samples  # Generated PSD
+
+# # Compute theoretical PSD for positive frequencies
+# freqs_positive = freqs[:num_samples // 2]  # Positive frequencies
+# theoretical_psd = phase_noise_model.generate_phase_noise_psd(tf.constant(freqs_positive, dtype=tf.float32)).numpy()
+
+# # Plot the comparison
+# plt.figure(figsize=(10, 6))
+# plt.semilogx(freqs_positive, 10 * np.log10(psd_generated[:num_samples // 2]), label="Generated PSD")
+# plt.semilogx(freqs_positive, theoretical_psd, label="Theoretical PSD", linestyle="--", color="orange")
+# plt.xlabel("Frequency Offset (Hz)")
+# plt.ylabel("PSD (dBc/Hz)")
+# plt.title("Generated vs Theoretical PSD")
+# plt.legend()
+# plt.grid(which="both", linestyle="--", linewidth=0.5)
+# plt.show()
+
+# # Print debug information (optional)
+# print("Generated phase noise (standalone):", generated_noise.numpy())
+import numpy as np
+# Parameters for generation
+num_samples = 4028  # Large number of samples for good frequency resolution
+sampling_rate = 8e9  # Sampling rate in Hz
+# Instantiate your class
+phase_noise_gen = PhaseNoiseGeneratorTF()
+
+# # Generate phase noise
+generated_noise = phase_noise_gen.generatePhaseNoiseSamples(num_samples, sampling_rate)
+
+
+
+# # Compute FFT and PSD
+freqs = np.fft.fftfreq(num_samples, 1/sampling_rate)
+print("Frequencies are ",freqs)
+psd_generated = np.abs(np.fft.fft(generated_noise.numpy()))**2 / num_samples
+
+# # Compute theoretical PSD for comparison
+freqs_positive = freqs[:num_samples // 2]  # Positive frequencies
+
+psd_theoretical = phase_noise_gen.generate_phase_noise_psd(freqs_positive).numpy()
+
+# Plot comparison
+plt.figure(figsize=(10, 6))
+plt.semilogx(freqs_positive, 10 * np.log10(psd_generated[:num_samples // 2]), label="Generated PSD")
+plt.semilogx(freqs_positive, psd_theoretical, label="Theoretical PSD", linestyle="--")
+plt.xlabel("Frequency Offset (Hz)")
+plt.ylabel("PSD (dBc/Hz)")
+plt.title("Generated vs Theoretical PSD")
+plt.legend()
+plt.grid()
 plt.show()
