@@ -55,16 +55,7 @@ class PhaseNoise:
         :param sampling_rate: Sampling rate in Hz.
         :return: Tensor of time-domain phase noise samples.
         """
-        #  # Convert num_samples to an integer if it's a TensorFlow tensor
-        # if isinstance(num_samples, tf.Tensor):
-        #     num_samples = int(num_samples.numpy())
-        # Ensure num_samples is a TensorFlow tensor
-        # num_samples = tf.cast(num_samples, tf.int32)
-        # num_samples_int = tf.get_static_value(num_samples)  # Get static value for NumPy compatibility
-        # # Frequency axis
-        # f_axis = np.fft.fftfreq(num_samples_int, d=1/sampling_rate)  # Frequency bins
-        # f_axis = np.abs(f_axis)  # Consider positive frequencies only for PSD
-         # Generate frequency axis in TensorFlow
+      
         num_samples_float = tf.cast(num_samples, tf.float32)
         f_axis = tf.range(0, num_samples_float) / num_samples_float * sampling_rate
         f_axis = tf.where(f_axis > sampling_rate / 2, f_axis - sampling_rate, f_axis)  # Wrap negative frequencies
@@ -80,8 +71,6 @@ class PhaseNoise:
         )
         
         # Apply the square root of the PSD as a filter
-        # Normalize the PSD filter
-        #psd_filter = tf.sqrt(psd_linear / tf.reduce_sum(psd_linear))
 
         psd_filter = tf.sqrt(psd_linear)
         noise_freq_domain = tf.signal.fft(noise)
@@ -256,7 +245,17 @@ import numpy as np
 phase_noise_gen_120GHz = PhaseNoiseGeneratorTF(fc=120e9)
 phase_noise_gen_220GHz = PhaseNoiseGeneratorTF(fc=220e9)
 
-# Frequency vector for plotting (log-spaced)
+phase_noise_model_120GHz = PhaseNoise()
+phase_noise_model_220GHz = PhaseNoise(f_carrier= 220e9)
+phase_noise_gen_Ref = PhaseNoise(f_carrier = 20e9)
+frequency_offsets = tf.experimental.numpy.logspace(4, 10, 1000)
+# Compute the PSD for the default frequency range
+#frequency_offsets = phase_noise_model_120GHz.f  # Default frequency range
+psd_values120 = phase_noise_model_120GHz.compute_psd(frequency_offsets)
+psd_values220 = phase_noise_model_220GHz.compute_psd(frequency_offsets)
+psd_calues_Ref = phase_noise_gen_Ref.compute_psd(frequency_offsets)
+
+#frequency vector for plotting (log-spaced)
 fvec = tf.constant(np.logspace(4, 10, 1000), dtype=tf.float32)  # 10 kHz to 10 GHz
 
 # Generate PSD values for both 120 GHz and 220 GHz
@@ -271,6 +270,9 @@ lf_dBc_Hz_220GHz = 10.0 * tf.math.log(lf_220GHz) / tf.math.log(tf.constant(10.0)
 plt.figure(figsize=(8, 6))
 plt.semilogx(fvec.numpy(), lf_dBc_Hz_120GHz.numpy(), label="3GPP UE model 1 @ 120 GHz", color="purple")
 plt.semilogx(fvec.numpy(), lf_dBc_Hz_220GHz.numpy(), label="3GPP UE model 1 @ 220 GHz", color="green")
+plt.semilogx(frequency_offsets.numpy(), psd_values120.numpy(), label="LMX2595 model @ 120 GHz", color="blue")
+plt.semilogx(frequency_offsets.numpy(), psd_values220.numpy(), label="LMX2595 model @ 220 GHz", color="red")
+plt.semilogx(frequency_offsets.numpy(), psd_calues_Ref.numpy(), label="LMX2595 model @ 20 GHz (ref)", color="orange", linestyle ="--")
 plt.xlabel("Frequency Offset [Hz]")
 plt.ylabel("Phase Noise PSD [dBc/Hz]")
 plt.title("Phase Noise PSD vs Frequency Offset for 120 GHz and 220 GHz")
