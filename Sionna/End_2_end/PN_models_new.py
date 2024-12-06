@@ -90,8 +90,11 @@ class PhaseNoise:
         # Transform back to time domain
         phase_noise = tf.signal.ifft(filtered_noise_freq)
         return tf.math.real(phase_noise)  # Return real part
+    
+
+
 # # Instantiate the PhaseNoise class with default parameters
-phase_noise_model = PhaseNoise()
+#phase_noise_model = PhaseNoise()
 
 # # Compute the PSD for the default frequency range
 # frequency_offsets = phase_noise.f  # Default frequency range
@@ -138,3 +141,139 @@ phase_noise_model = PhaseNoise()
 
 # print("Generated phase noise (standalone):", generated_noise.numpy())
 # print("PhaseNoise parameters (standalone):", vars(phase_noise_model))
+
+
+
+
+
+class PhaseNoiseGeneratorTF:
+    def __init__(
+        self,
+        fc=120e9,  # Carrier frequency in Hz
+        LBW=187e3,  # Loop bandwidth in Hz
+        FOM=[-215, -240, -175, -130],  # Figure of merit values in dB
+        fz=[float('inf'), 1e4, 50.3e6, float('inf')],  # Zero-point frequencies in Hz
+        P=[10, 20, 20, 20],  # Power consumption in mW
+        k=[2, 1, 2, 3],  # Zero-point power factors
+        ):
+        """
+        Initialize the Phase Noise Generator with default or user-specified parameters.
+
+        Parameters:
+        fc : float, optional
+            Carrier frequency in Hz (default is 120 GHz).
+        LBW : float, optional
+            Loop bandwidth in Hz (default is 187 kHz).
+        FOM : list, optional
+            Figure of merit values in dB (default values for 3GPP TR38.803).
+        fz : list, optional
+            Zero-point frequencies in Hz (default values for 3GPP TR38.803).
+        P : list, optional
+            Power consumption in mW (default values for 3GPP TR38.803).
+        k : list, optional
+            Zero-point power factors (default values for 3GPP TR38.803).
+        """
+        self.fc = tf.constant(fc, dtype=tf.float32)
+        self.LBW = tf.constant(LBW, dtype=tf.float32)
+        self.FOM = tf.constant(FOM, dtype=tf.float32)
+        self.fz = tf.constant(fz, dtype=tf.float32)
+        self.P = tf.constant(P, dtype=tf.float32)
+        self.k = tf.constant(k, dtype=tf.float32)
+        self.PSD0 = self.calculate_psd0()
+
+    def calculate_psd0(self):
+        return self.FOM + 20.0 * tf.math.log(self.fc) / tf.math.log(tf.constant(10.0, dtype=tf.float32)) - 10.0 * tf.math.log(self.P) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
+
+    def calculate_psd(self, f, psd0, fz, k):
+        """
+        Calculate the Power Spectral Density (PSD) for a given frequency range.
+
+        Parameters:
+        f : tf.Tensor
+            Frequency vector (Hz).
+        psd0 : tf.Tensor
+            PSD0 value at zero frequency, converted to linear scale (not in dB).
+        fz : float
+            Zero-point frequency (Hz). If fz = float('inf'), a simplified formula is used.
+        k : float
+            Slope factor controlling the PSD decay with frequency.
+
+        Returns:
+        tf.Tensor
+            Calculated PSD for the given frequency vector.
+        """
+        # Convert PSD0 from dB to linear scale: 10^(psd0/10)
+        psd_linear = tf.pow(10.0, psd0 / 10.0)
+        # Case 1: If fz is infinite (simplified formula)
+        # PSD = PSD_linear / (1 + f^k)
+        if fz == float('inf'):
+            numerator = psd_linear  # Explicitly assign numerator for clarity
+            denominator = 1.0 + tf.pow(f, k)  # Compute denominator
+            return numerator / denominator
+        # Case 2: If fz is finite (full formula)
+        # PSD = PSD_linear * [(1 + (f / fz)^k) / (1 + f^k)]
+        else:
+            numerator = psd_linear * (1.0 + tf.pow(f / fz, k))  # Compute numerator
+            denominator = 1.0 + tf.pow(f, k)  # Compute denominator
+            return numerator / denominator
+
+    #@tf.function
+    def generate_phase_noise_psd(self, fvec):
+        """
+        Generate the phase noise PSD for a given frequency vector based on 
+        the 3GPP TR38.803 UE model 1.
+
+        Parameters:
+        fvec : tf.Tensor
+            Frequency vector (Hz) for which the phase noise PSD is computed.
+
+        Returns:
+        tf.Tensor
+            Phase noise PSD values for the given frequency vector.
+        """
+        # Separate the frequency vector into low (f <= LBW) and high (f > LBW) ranges
+        f_low = tf.boolean_mask(fvec, fvec <= self.LBW)  # Frequencies below or equal to LBW
+        f_high = tf.boolean_mask(fvec, fvec > self.LBW)  # Frequencies above LBW
+        
+        # Compute the PSD for the low-frequency range (f <= LBW)
+        # Low-frequency PSD is the sum of S_Ref(f) and S_PLL(f)
+        lf_low = (
+            self.calculate_psd(f_low, self.PSD0[0], self.fz[0], self.k[0]) +
+            self.calculate_psd(f_low, self.PSD0[1], self.fz[1], self.k[1])
+        )
+        # Compute the PSD for the high-frequency range (f > LBW)
+        # High-frequency PSD is the sum of S_VCOv2(f) and S_VCOv3(f)
+        lf_high = (
+            self.calculate_psd(f_high, self.PSD0[2], self.fz[2], self.k[2]) +
+            self.calculate_psd(f_high, self.PSD0[3], self.fz[3], self.k[3])
+        )
+        #combine the low-frequency and high-frequency PSDs into a single tensor
+        return tf.concat([lf_low, lf_high], axis=0)
+
+
+import numpy as np
+# Initialize generators for 120 GHz and 220 GHz
+phase_noise_gen_120GHz = PhaseNoiseGeneratorTF(fc=120e9)
+phase_noise_gen_220GHz = PhaseNoiseGeneratorTF(fc=220e9)
+
+# Frequency vector for plotting (log-spaced)
+fvec = tf.constant(np.logspace(4, 10, 1000), dtype=tf.float32)  # 10 kHz to 10 GHz
+
+# Generate PSD values for both 120 GHz and 220 GHz
+lf_120GHz = phase_noise_gen_120GHz.generate_phase_noise_psd(fvec)
+lf_220GHz = phase_noise_gen_220GHz.generate_phase_noise_psd(fvec)
+
+# Convert PSD to dBc/Hz for plotting
+lf_dBc_Hz_120GHz = 10.0 * tf.math.log(lf_120GHz) / tf.math.log(tf.constant(10.0))
+lf_dBc_Hz_220GHz = 10.0 * tf.math.log(lf_220GHz) / tf.math.log(tf.constant(10.0))
+
+# Plot PSD vs Frequency Offset
+plt.figure(figsize=(8, 6))
+plt.semilogx(fvec.numpy(), lf_dBc_Hz_120GHz.numpy(), label="3GPP UE model 1 @ 120 GHz", color="purple")
+plt.semilogx(fvec.numpy(), lf_dBc_Hz_220GHz.numpy(), label="3GPP UE model 1 @ 220 GHz", color="green")
+plt.xlabel("Frequency Offset [Hz]")
+plt.ylabel("Phase Noise PSD [dBc/Hz]")
+plt.title("Phase Noise PSD vs Frequency Offset for 120 GHz and 220 GHz")
+plt.grid(which="both", linestyle="--", linewidth=0.5)
+plt.legend()
+plt.show()
