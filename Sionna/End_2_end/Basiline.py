@@ -55,7 +55,7 @@ ebno_db_max = 18.0
 num_bits_per_symbol = 6 # Baseline is 64-QAM
 #modulation_order = 2**num_bits_per_symbol
 coderate = 0.75 #0.75 # Coderate for the outer code
-n = 3648 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
+n = 4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
 k = int(n*coderate) # Number of information bits per codeword
 num_iter = 50 #number of BP iterations 
@@ -77,7 +77,7 @@ Q = 32  # Number of Q blocks
 cp_ratio = 0.0703125
 cp_lenght = cp_ratio *n/(1+cp_ratio)
 
-lenght_of_block = int(num_symbols_per_codeword+cp_lenght+Q*Nzc_PTRS)
+lenght_of_block = int(num_symbols_per_codeword)#+cp_lenght#Q*Nzc_PTRS)
 # Phase noise 
 PSD0_dB = -72, #dB
 f_carrier = 120e9
@@ -235,16 +235,16 @@ class Baseline(Model): # Inherits from Keras Model
         # PTRS pilots 
         #############################
         
-        x_PTRS, transmitted_ptrs = self.PTRS.add_ptrs_to_blocks(x)
+        #x_PTRS, transmitted_ptrs = self.PTRS.add_ptrs_to_blocks(x)
         
 
         #Add cyclic prefix 
-        x_with_cp = self.cp.add_cp(x_PTRS)
+        #x_with_cp = self.cp.add_cp(x_PTRS)
         
         ############################
         #Filter and sampling
         ############################
-        x_us = self.us(x_with_cp) # upsampling 
+        x_us = self.us(x) # upsampling 
 
         #Filter the upsampled sequence 
         x_rrcf = self.rrcf(x_us)
@@ -263,24 +263,24 @@ class Baseline(Model): # Inherits from Keras Model
         ############################
         #Phase noise - transmitter 
         ###########################
-        # Print the PSD values
-        sampling_rate = int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))  # Dynamic sampling rate
-        num_samples = tf.shape(x_rrcf)[-1]
-        num_samples = tf.cast(num_samples, tf.int32)#.numpy()  # Convert to integer
-        phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
-        # Expand phase noise to cover all batches
+        # # Print the PSD values
+        # sampling_rate = int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))  # Dynamic sampling rate
+        # num_samples = tf.shape(x_rrcf)[-1]
+        # num_samples = tf.cast(num_samples, tf.int32)#.numpy()  # Convert to integer
+        # phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
+        # # Expand phase noise to cover all batches
     
         
-        phase_noise_samples = tf.tile(
-            tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
-            )  # Shape: [batch_size, num_samples]
+        # phase_noise_samples = tf.tile(
+        #     tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
+        #     )  # Shape: [batch_size, num_samples]
            
       
-        # Convert phase_noise_samples to complex type
-        phase_noise_complex = tf.exp(
-            tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
-            )  # Convert to complex64 phase noise
-        x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
+        # # Convert phase_noise_samples to complex type
+        # phase_noise_complex = tf.exp(
+        #     tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
+        #     )  # Convert to complex64 phase noise
+        # x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
 
         ##############################
         # Channel 
@@ -296,30 +296,30 @@ class Baseline(Model): # Inherits from Keras Model
         # Receive 
         ############################
         #Remove CP 
-        y_ds_no_cp = self.cp.remove_cp(y_ds)
+        #y_ds_no_cp = self.cp.remove_cp(y_ds)
         
         ###########################
         # PN compensation 
         ###########################
         #extract received PTRS 
-        received_blocks = tf.split(y_ds_no_cp, self.PTRS.Q, axis=1)
+        #received_blocks = tf.split(y_ds_no_cp, self.PTRS.Q, axis=1)
         
-        received_ptrs = tf.stack(
-        [block[:, :self.PTRS.Nzc_PTRS] for block in received_blocks],
-        axis=1
-            )  # Shape: [batch_size, Q, Nzc_PTRS]
-        
-
-        phase_error = self.phase_compensator.calculate_phase_error(received_ptrs, transmitted_ptrs)
-        
-        interpolated_phase_error = self.phase_compensator.interpolate_phase_error(phase_error, tf.shape(y_ds_no_cp)[-1])
-        
-        y_compensated = self.phase_compensator.compensate_phase_noise(y_ds_no_cp, interpolated_phase_error)
+        # received_ptrs = tf.stack(
+        # [block[:, :self.PTRS.Nzc_PTRS] for block in received_blocks],
+        # axis=1
+        #     )  # Shape: [batch_size, Q, Nzc_PTRS]
         
 
-        data_only_signal = self.phase_compensator.remove_ptrs_from_signal(y_compensated, Nzc_PTRS, Q, num_symbols_per_codeword)
+        # phase_error = self.phase_compensator.calculate_phase_error(received_ptrs, transmitted_ptrs)
         
-        llr_ch = self.demapper([data_only_signal,no])
+        # interpolated_phase_error = self.phase_compensator.interpolate_phase_error(phase_error, tf.shape(y_ds_no_cp)[-1])
+        
+        # y_compensated = self.phase_compensator.compensate_phase_noise(y_ds_no_cp, interpolated_phase_error)
+        
+
+        # data_only_signal = self.phase_compensator.remove_ptrs_from_signal(y_compensated, Nzc_PTRS, Q, num_symbols_per_codeword)
+        
+        llr_ch = self.demapper([y_ds,no])
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
  
@@ -347,7 +347,7 @@ model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
