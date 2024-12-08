@@ -362,8 +362,18 @@ for ebno_db in selected_ebno_dbs:
     # Assuming `x_rrcf` is stored in the model during the forward pass
     x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
 print("All selected Eb/N0 evaluations completed.")
+# Extract and save constellation data after training
+constellation_baseline['constellation_after'] = model.constellation.points.numpy()
+
+# Save constellation data to a .pkl file
+with open("constellation_data_QAM64.pkl", "wb") as f:
+    pickle.dump(constellation_baseline, f)
+
+
+
+
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
@@ -372,11 +382,6 @@ results_baseline['BER']['baseline'] = ber_NN.numpy()
 with open("bler_results_baseline.pkl", 'wb') as f:
     pickle.dump(results_baseline, f)
 
-
-
-# # Save constellation data to a file
-# with open("constellation_baseline.pkl", 'wb') as f:
-#     pickle.dump(constellation_baseline, f)
 
 # Save the x_rrcf signals to a file (as NumPy or TF tensors)
 signal_file = "x_rrcf_signals_no_clipping.pkl"

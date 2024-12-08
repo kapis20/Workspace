@@ -141,11 +141,11 @@ def plot_constellation_baseline(baseline_constellation_filename):
     for ebno, points in constellation_baseline.items():
         real = points.real
         imag = points.imag
-        plt.scatter(real, imag, label=f"Constellation at Eb/No = {ebno} dB")
+        plt.scatter(real, imag)#, label=f"Constellation at Eb/No = {ebno} dB")
     
     plt.xlabel("Real Part")
     plt.ylabel("Imaginary Part")
-    plt.title("Baseline Constellation Plot")
+    plt.title("64 QAM Constellation Plot")
     plt.grid(True)
     plt.legend()
     plt.savefig("baseline_constellation_plot.png")
@@ -302,4 +302,6 @@ def plot_single_baseline_ber_bler(file_name, papr_limit):
 
 # plot_baseline_ber_bler(file_names, papr_limits)
 
-plot_single_baseline_ber_bler('bler_results_baseline.pkl',5.5)
+#plot_single_baseline_ber_bler('bler_results_baseline.pkl',5.5)
+
+plot_constellation_baseline("constellation_data_QAM64.pkl")
