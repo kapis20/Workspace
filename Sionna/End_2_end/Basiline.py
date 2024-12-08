@@ -219,7 +219,7 @@ class Baseline(Model): # Inherits from Keras Model
         #########################################
         self.phase_compensator = PhaseNoiseCompensator(Nzc_PTRS)
 
-    @tf.function(jit_compile=True) # Enable graph execution to speed things up
+    #@tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
@@ -256,6 +256,8 @@ class Baseline(Model): # Inherits from Keras Model
         # ACLR constraint 
         ############################
         x_rrcf = enforce_PAPR_Constraints(x_rrcf,5.5)
+
+        tf.print("Shape of the x_rrfct is", tf.shape(x_rrcf))
         # Store only constellation data after mapping
         # Append ebno_db and constellation data as tuple to list
         # constellation_data_list.append((float(ebno_db), x))
