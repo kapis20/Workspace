@@ -1,5 +1,7 @@
 import tensorflow as tf
-
+import matplotlib.pyplot as plt
+import numpy as np
+import pickle
 class CCDFCalculator:
     def __init__(self):
         pass
@@ -80,40 +82,96 @@ class CCDFCalculator:
         return self.calculate_ccdf(normalized_power, thresholds)
 
 
-##################################################################
-# Tests 
-##################################################################
-import matplotlib.pyplot as plt
-import numpy as np
+# ##################################################################
+# # Tests 
+# ##################################################################
 
 
-# Create an instance of the CCDFCalculator (assumes the class code is already defined)
+
+# # Create an instance of the CCDFCalculator (assumes the class code is already defined)
+# ccdf_calculator = CCDFCalculator()
+
+# # Generate a sample signal [Batch, num_of_samples]
+# batch_size = 10
+# num_of_samples = 1000
+# signal = tf.complex(
+#     tf.random.normal([batch_size, num_of_samples]),
+#     tf.random.normal([batch_size, num_of_samples])
+# )
+
+# # Define thresholds for CCDF calculation
+# thresholds_db = np.linspace(0, 10, 100)  # Thresholds in dB
+# thresholds_linear = 10 ** (thresholds_db / 10)  # Convert dB to linear scale
+
+# # Compute CCDF
+# ccdf = ccdf_calculator.compute_ccdf(signal, thresholds_linear)
+
+# # Plot the CCDF graph
+# plt.figure(figsize=(8, 6))
+# plt.plot(thresholds_db, ccdf.numpy(), label='CCDF Curve')
+
+# # Add labels, grid, and title
+# plt.xlabel('Normalized Power (dB)', fontsize=12)
+# plt.ylabel('CCDF (Probability)', fontsize=12)
+# plt.title('CCDF vs Normalized Power', fontsize=14)
+# plt.yscale('log')  # Log scale for CCDF (probability)
+# plt.grid(True, which="both", linestyle='--', linewidth=0.5)
+# plt.legend()
+# plt.show()
+
+
+##############################################################
+## Graphs 
+##############################################################
+
+
+
+# File to save the signals
+signal_file = "x_rrcf_signals_no_clipping.pkl"
+
+
+
+# Load signals from the file
+with open(signal_file, "rb") as f:
+    loaded_signals = pickle.load(f)
+
+
+# Initialize CCDFCalculator
 ccdf_calculator = CCDFCalculator()
 
-# Generate a sample signal [Batch, num_of_samples]
-batch_size = 10
-num_of_samples = 1000
-signal = tf.complex(
-    tf.random.normal([batch_size, num_of_samples]),
-    tf.random.normal([batch_size, num_of_samples])
-)
-
 # Define thresholds for CCDF calculation
-thresholds_db = np.linspace(0, 10, 100)  # Thresholds in dB
-thresholds_linear = 10 ** (thresholds_db / 10)  # Convert dB to linear scale
+thresholds_db = np.linspace(0, 10, 100)  # Define the range of normalized power thresholds in dB
+thresholds_linear = 10 ** (thresholds_db / 10)  # Convert dB thresholds to linear scale
 
-# Compute CCDF
-ccdf = ccdf_calculator.compute_ccdf(signal, thresholds_linear)
 
-# Plot the CCDF graph
-plt.figure(figsize=(8, 6))
-plt.plot(thresholds_db, ccdf.numpy(), label='CCDF Curve')
 
-# Add labels, grid, and title
-plt.xlabel('Normalized Power (dB)', fontsize=12)
-plt.ylabel('CCDF (Probability)', fontsize=12)
-plt.title('CCDF vs Normalized Power', fontsize=14)
-plt.yscale('log')  # Log scale for CCDF (probability)
-plt.grid(True, which="both", linestyle='--', linewidth=0.5)
+
+# Compute CCDF for a loaded signal
+ccdf_calculator = CCDFCalculator()
+thresholds_db = np.linspace(0, 10, 100)
+thresholds_linear = 10 ** (thresholds_db / 10)
+
+
+# Plot CCDFs for each Eb/N0 value in the loaded signals
+plt.figure(figsize=(10, 6))
+for ebno_db, x_rrcf_signal in loaded_signals.items():
+    print(f"Computing CCDF for Eb/N0 = {ebno_db:.1f} dB...")  # Print status for each Eb/N0
+
+    # Convert the NumPy signal to a TensorFlow tensor for computation
+    x_rrcf_tensor = tf.convert_to_tensor(x_rrcf_signal)
+
+    # Compute CCDF for the current signal
+    ccdf = ccdf_calculator.compute_ccdf(x_rrcf_tensor, thresholds_linear)
+
+    # Plot CCDF for the current Eb/N0
+    plt.plot(thresholds_db, ccdf.numpy(), label=f"QAM 64 = {ebno_db:.1f} dB")
+
+# Customize the plot
+plt.xlabel("Normalized Power (dB)", fontsize=12)
+plt.ylabel("CCDF (Probability)", fontsize=12)
+plt.title("CCDF of Normalized Power", fontsize=14)
+plt.yscale("log")  # Logarithmic scale for the CCDF
+plt.grid(True, which="both", linestyle="--", linewidth=0.5)
 plt.legend()
+plt.tight_layout()
 plt.show()

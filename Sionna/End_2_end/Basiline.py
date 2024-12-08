@@ -98,6 +98,9 @@ results_baseline = {
     'BER': {},
     'BLER': {}
 }
+
+x_rrcf_signals = {}  # Dictionary to store signals for each Eb/N0 value
+
 #Dictionary to store constellation data 
 constellation_baseline = {}
 constellation_data_list = []
@@ -219,7 +222,7 @@ class Baseline(Model): # Inherits from Keras Model
         #########################################
         self.phase_compensator = PhaseNoiseCompensator(Nzc_PTRS)
 
-    #@tf.function(jit_compile=True) # Enable graph execution to speed things up
+    @tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
@@ -253,11 +256,10 @@ class Baseline(Model): # Inherits from Keras Model
         # tf.print("Type of rrcf:", type(self.rrcf))
         # tf.print("Attributes of rrcf:", dir(self.rrcf))
         ############################
-        # ACLR constraint 
+        # PAPR constraint 
         ############################
-        x_rrcf = enforce_PAPR_Constraints(x_rrcf,5.5)
-
-        tf.print("Shape of the x_rrfct is", tf.shape(x_rrcf))
+        #x_rrcf = enforce_PAPR_Constraints(x_rrcf,5.5)
+        
         # Store only constellation data after mapping
         # Append ebno_db and constellation data as tuple to list
         # constellation_data_list.append((float(ebno_db), x))
@@ -329,7 +331,7 @@ class Baseline(Model): # Inherits from Keras Model
         decoded_bits = self.decoder(llr_de)
 
 
-        return uncoded_bits, decoded_bits
+        return uncoded_bits, decoded_bits, x_rrcf
 
 
 
@@ -339,7 +341,7 @@ class Baseline(Model): # Inherits from Keras Model
 
 
 
-# Define the SNR range for evaluation
+# Define the ebno range for evaluation
 ebno_dbs = np.arange(ebno_db_min, ebno_db_max, 0.5)
 #store the Eb/No values in the results array
 results_baseline['ebno_dbs']['baseline'] = ebno_dbs
@@ -348,8 +350,20 @@ results_baseline['ebno_dbs']['baseline'] = ebno_dbs
 model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
+# Specific Eb/N0 values for which signals are collected
+selected_ebno_dbs = [8.5]  # Adjust as needed
+# Evaluate model and collect signals
+for ebno_db in selected_ebno_dbs:
+    # Forward pass through the model
+    print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
+    uncoded_bits, decoded_bits, x_rrcf = model(BATCH_SIZE, ebno_db)
+    
+    # Save the `x_rrcf` signal (post-PAPR enforcement)
+    # Assuming `x_rrcf` is stored in the model during the forward pass
+    x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
+print("All selected Eb/N0 evaluations completed.")
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
@@ -363,3 +377,9 @@ with open("bler_results_baseline.pkl", 'wb') as f:
 # # Save constellation data to a file
 # with open("constellation_baseline.pkl", 'wb') as f:
 #     pickle.dump(constellation_baseline, f)
+
+# Save the x_rrcf signals to a file (as NumPy or TF tensors)
+signal_file = "x_rrcf_signals_no_clipping.pkl"
+with open(signal_file, "wb") as f:
+    x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
+    pickle.dump(x_rrcf_numpy, f)
