@@ -104,6 +104,8 @@ x_rrcf_signals = {}  # Dictionary to store signals for each Eb/N0 value
 
 x_rrcf_Rapp_signals = {} #Store noisy signals 
 
+bits_after_mapper = {} #store bits after mapper
+
 #Dictionary to store constellation data 
 constellation_baseline = {}
 constellation_data_list = []
@@ -212,8 +214,8 @@ class Baseline(Model): # Inherits from Keras Model
         # Non linear noise - Rapp model 
         ########################################
         self.RappModel = RappPowerAmplifier(
-            saturation_amplitude = 0.5,
-            smoothness_factor = 3.0
+            saturation_amplitude = 1.35,
+            smoothness_factor = 1.41
         )
 
     
@@ -350,7 +352,7 @@ class Baseline(Model): # Inherits from Keras Model
         decoded_bits = self.decoder(llr_de)
 
 
-        return uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp
+        return uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp, x
 
 
 
@@ -375,12 +377,15 @@ selected_ebno_dbs = [9]  # Adjust as needed
 for ebno_db in selected_ebno_dbs:
     # Forward pass through the model
     print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
-    uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp = model(BATCH_SIZE, ebno_db)
+    uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp,x = model(BATCH_SIZE, ebno_db)
     
     # Save the `x_rrcf` signal (post-PAPR enforcement)
     # Assuming `x_rrcf` is stored in the model during the forward pass
     x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
     x_rrcf_Rapp_signals[ebno_db] = x_rrcf_Rapp
+    bits_after_mapper[ebno_db] = x
+
+
 print("All selected Eb/N0 evaluations completed.")
 # Extract and save constellation data after training
 constellation_baseline['constellation_after'] = model.constellation.points.numpy()
@@ -414,3 +419,8 @@ signal_Rappfile = "x_rrcf_Rapp.pkl"
 with open(signal_Rappfile, "wb") as f:
     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_Rapp_numpy, f)
+
+signal_mapperFile = "x_mapper.pkl"
+with open(signal_Rappfile, "wb") as f:
+    x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
+    pickle.dump(signal_mapperFile, f)
