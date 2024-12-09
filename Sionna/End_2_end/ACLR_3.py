@@ -15,18 +15,7 @@ beta = 0.3
 span_in_symbols = 32
 samples_per_symbol = 4
 
-# # Signal generation: Random QAM symbols
-# np.random.seed(42)  # For reproducibility
-# symbols = np.random.randint(0, modulation_order, size=num_symbols_per_codeword)
-# symbols = 2 * symbols - (modulation_order - 1)  # Map to range
 
-# # Upsampling
-# upsample_layer = Upsampling(samples_per_symbol)
-# upsampled_signal = upsample_layer(symbols)
-
-# # Root Raised Cosine Filter
-# rrc_filter = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
-# filtered_signal = rrc_filter(upsampled_signal)
 
 
 # File to save the signals
@@ -45,7 +34,7 @@ batch_size, num_samples = loaded_signals[8.5].shape  # Assuming you want EB/N0 =
 signal_batch = loaded_signals[8.5]  # Shape: (batch_size, num_samples)
 
 
-
+###########################################################################
 # Compute FFT for PSD
 fft_size = 1024
 # Compute PSD for each signal in the batch
@@ -69,3 +58,23 @@ plt.ylabel("Power (dB)")
 plt.grid()
 plt.legend()
 plt.show()
+
+###################################################################
+# ACLR calculations 
+###################################################################
+
+fft_size = len(freq_axis)  # Assuming freq_axis is from the PSD plot
+
+# Define frequency ranges
+in_band_range = (freq_axis >= -(0.5 + beta)) & (freq_axis <= (0.5 + beta))
+out_of_band_range = ~in_band_range  # Complement of in-band range
+
+# Compute in-band and out-of-band power
+in_band_power = np.sum(average_psd[in_band_range])
+out_of_band_power = np.sum(average_psd[out_of_band_range])
+
+# Calculate ACLR
+aclr = out_of_band_power / in_band_power
+
+# Display the result
+print(f"ACLR (Adjacent Channel Leakage Ratio): {10 * np.log10(aclr):.2f} dB")
