@@ -212,8 +212,8 @@ class Baseline(Model): # Inherits from Keras Model
         # Non linear noise - Rapp model 
         ########################################
         self.RappModel = RappPowerAmplifier(
-            saturation_amplitude = 1.2,
-            smoothness_factor = 2.0
+            saturation_amplitude = 0.5,
+            smoothness_factor = 3.0
         )
 
     

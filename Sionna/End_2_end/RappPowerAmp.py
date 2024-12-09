@@ -30,8 +30,8 @@ class RappPowerAmplifier:
         """
         p = self.smoothness_factor
         amplitude = tf.abs(input_signal)
-        gain = tf.pow(1 + tf.pow(amplitude / self.saturation_amplitude, 2 * p), -1 / (2 * p))
+        gain = tf.pow(1 + tf.pow(amplitude / self.saturation_amplitude, 2 * p), 1 / (2 * p))
         # Convert gain to complex64 to match input_signal
         gain = tf.cast(gain, dtype=input_signal.dtype)
-        return input_signal * gain
+        return input_signal / gain
 
