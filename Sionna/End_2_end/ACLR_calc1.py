@@ -42,13 +42,13 @@ for i in range(batch_size):
 # Average PSD across the batch
 average_psd = np.mean(psd_batch, axis=0)
 
-# Compute normalized frequency axis
+# # Compute normalized frequency axis
 freqs = np.fft.fftshift(np.fft.fftfreq(num_samples, d=1 / sampling_rate))
-normalized_freqs = freqs / (symbol_rate / 2)  # Normalized frequency (relative to Nyquist)
+# normalized_freqs = freqs / (symbol_rate / 2)  # Normalized frequency (relative to Nyquist)
 
 # Plot PSD
 plt.figure(figsize=(10, 6))
-plt.plot(normalized_freqs, average_psd, label="PSD of RRC Signal")
+plt.plot(freqs, average_psd, label="PSD of RRC Signal")
 plt.title("PSD of the Tx Filter (RRC Output)")
 plt.xlabel("Normalized Frequency")
 plt.ylabel("Power Spectral Density (dB)")
