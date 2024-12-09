@@ -42,6 +42,7 @@ import pickle
 from PN_models_new import PhaseNoise
 from Cyclic_Prefix import CyclicPrefix
 from PTRS_pilots import PTRSPilotInserter, PhaseNoiseCompensator
+from RappPowerAmp import RappPowerAmplifier
 
 ###############################################
 # SNR range for evaluation and training [dB]
@@ -100,6 +101,8 @@ results_baseline = {
 }
 
 x_rrcf_signals = {}  # Dictionary to store signals for each Eb/N0 value
+
+x_rrcf_Rapp_signals = {} #Store noisy signals 
 
 #Dictionary to store constellation data 
 constellation_baseline = {}
@@ -204,6 +207,16 @@ class Baseline(Model): # Inherits from Keras Model
                 hard_out= False,             # Use soft-output decoding
                 num_iter=num_iter           # Number of BP iterations
             )
+
+        ########################################
+        # Non linear noise - Rapp model 
+        ########################################
+        self.RappModel = RappPowerAmplifier(
+            saturation_amplitude = 1.2,
+            smoothness_factor = 2.0
+        )
+
+    
         ########################################
         # Phase noise 
         ########################################
@@ -252,6 +265,12 @@ class Baseline(Model): # Inherits from Keras Model
         #Filter the upsampled sequence 
         x_rrcf = self.rrcf(x_us)
 
+
+        #############################
+        # Rapp noise addition 
+        ############################
+        x_rrcf_Rapp = self.RappModel(x_rrcf)
+        #tf.print("Shape of x_rrcf_Rapp is:", tf.shape(x_rrcf_Rapp))
         #tf.print("ACLR is (db)",10*np.log10(self.rrcf.aclr))
         # tf.print("Type of rrcf:", type(self.rrcf))
         # tf.print("Attributes of rrcf:", dir(self.rrcf))
@@ -289,7 +308,7 @@ class Baseline(Model): # Inherits from Keras Model
         ##############################
         # Channel 
         ##############################
-        y = self.awgn_channel([x_rrcf, no])
+        y = self.awgn_channel([x_rrcf_Rapp, no])
         ############################
         #matched filter, downsampling 
         ############################
@@ -331,7 +350,7 @@ class Baseline(Model): # Inherits from Keras Model
         decoded_bits = self.decoder(llr_de)
 
 
-        return uncoded_bits, decoded_bits, x_rrcf
+        return uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp
 
 
 
@@ -351,16 +370,17 @@ model = Baseline()
 # After evaluation, convert list to dictionary
 #constellation_baseline = {ebno: data.numpy() for ebno, data in constellation_data_list}
 # Specific Eb/N0 values for which signals are collected
-selected_ebno_dbs = [8.5]  # Adjust as needed
+selected_ebno_dbs = [9]  # Adjust as needed
 # Evaluate model and collect signals
 for ebno_db in selected_ebno_dbs:
     # Forward pass through the model
     print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
-    uncoded_bits, decoded_bits, x_rrcf = model(BATCH_SIZE, ebno_db)
+    uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp = model(BATCH_SIZE, ebno_db)
     
     # Save the `x_rrcf` signal (post-PAPR enforcement)
     # Assuming `x_rrcf` is stored in the model during the forward pass
     x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
+    x_rrcf_Rapp_signals[ebno_db] = x_rrcf_Rapp
 print("All selected Eb/N0 evaluations completed.")
 # Extract and save constellation data after training
 constellation_baseline['constellation_after'] = model.constellation.points.numpy()
@@ -373,7 +393,7 @@ with open("constellation_data_QAM64.pkl", "wb") as f:
 
 
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
@@ -388,3 +408,9 @@ signal_file = "x_rrcf_signals_no_clipping.pkl"
 with open(signal_file, "wb") as f:
     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_numpy, f)
+
+
+signal_Rappfile = "x_rrcf_Rapp.pkl"
+with open(signal_Rappfile, "wb") as f:
+    x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
+    pickle.dump(x_rrcf_Rapp_numpy, f)

@@ -128,6 +128,7 @@ class CCDFCalculator:
 
 # File to save the signals
 signal_file = "x_rrcf_signals_no_clipping.pkl"
+signal_file_noisy = "x_rrcf_Rapp.pkl"
 
 
 
@@ -135,7 +136,9 @@ signal_file = "x_rrcf_signals_no_clipping.pkl"
 with open(signal_file, "rb") as f:
     loaded_signals = pickle.load(f)
 
-
+# Load signals from the file
+with open(signal_file_noisy, "rb") as f:
+    loaded_signals_noisy = pickle.load(f)
 # Initialize CCDFCalculator
 ccdf_calculator = CCDFCalculator()
 
@@ -166,10 +169,22 @@ for ebno_db, x_rrcf_signal in loaded_signals.items():
     # Plot CCDF for the current Eb/N0
     plt.plot(thresholds_db, ccdf.numpy(), label=f"QAM 64 dB, $\\beta$ = 0.3")
 
+# Plot for loaded_signals_noisy
+for ebno_db, x_rrcf_signal in loaded_signals_noisy.items():
+    print(f"Computing CCDF for Eb/N0 = {ebno_db:.1f} dB (Rapp model)...")  # Print status for each Eb/N0
+
+    # Convert the NumPy signal to a TensorFlow tensor for computation
+    x_rrcf_tensor = tf.convert_to_tensor(x_rrcf_signal)
+
+    # Compute CCDF for the current signal
+    ccdf = ccdf_calculator.compute_ccdf(x_rrcf_tensor, thresholds_linear)
+
+    # Plot CCDF for the current Eb/N0
+    plt.plot(thresholds_db, ccdf.numpy(), linestyle='--', label=f"Noisy Signals: Eb/N0 = {ebno_db:.1f} dB")
 # Customize the plot
 plt.xlabel("Normalized Power (dB)", fontsize=12)
 plt.ylabel("CCDF (Probability)", fontsize=12)
-plt.title("CCDF of Normalized Power", fontsize=14)
+plt.title("CCDF of Normalized Power ", fontsize=14)
 plt.yscale("log")  # Logarithmic scale for the CCDF
 plt.grid(True, which="both", linestyle="--", linewidth=0.5)
 plt.legend()
