@@ -177,7 +177,7 @@ def plot_loss_function(loss_file_path,fig_file_path):
 import pickle
 import matplotlib.pyplot as plt
 
-def plot_baseline_ber_bler(file_names, papr_limits):
+def plot_baseline_ber_bler(file_names, papr_limits=None):
     """
     Plots BER and BLER for multiple baseline results corresponding to different PAPR limits.
     
@@ -224,7 +224,7 @@ def plot_baseline_ber_bler(file_names, papr_limits):
     plt.savefig("ber_bler_baseline_papr_plot.png")
     plt.show()
 
-def plot_single_baseline_ber_bler(file_name, papr_limit):
+def plot_single_baseline_ber_bler(file_name, papr_limit = None):
     """
     Plots BER and BLER for a single baseline result file with a specified PAPR limit.
     
@@ -246,23 +246,41 @@ def plot_single_baseline_ber_bler(file_name, papr_limit):
 
     # Create a figure with two subplots, one for BER and one for BLER
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
+    if papr_limit == None:
+            # Plot BER
+        ax1.semilogy(ebno_dbs_baseline, BER_baseline, label="BER - Baseline")
+        ax1.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
+        ax1.set_ylabel("BER")
+        ax1.grid(which="both", linestyle='--', linewidth=0.5)
+        ax1.legend()
+        ax1.set_ylim((1e-5, 1))
 
-    # Plot BER
-    ax1.semilogy(ebno_dbs_baseline, BER_baseline, label=f"BER - Baseline (PAPR={papr_limit})")
-    ax1.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
-    ax1.set_ylabel("BER")
-    ax1.grid(which="both", linestyle='--', linewidth=0.5)
-    ax1.legend()
-    ax1.set_ylim((1e-5, 1))
+        # Plot BLER
+        ax2.semilogy(ebno_dbs_baseline, BLER_baseline, label="BLER - Baseline")
+        ax2.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
+        ax2.set_xlabel(r"$E_b/N_0$ (dB)")
+        ax2.set_ylabel("BLER")
+        ax2.grid(which="both", linestyle='--', linewidth=0.5)
+        ax2.legend()
+        ax2.set_ylim((1e-5, 1))
+    else:
 
-    # Plot BLER
-    ax2.semilogy(ebno_dbs_baseline, BLER_baseline, label=f"BLER - Baseline (PAPR={papr_limit})")
-    ax2.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
-    ax2.set_xlabel(r"$E_b/N_0$ (dB)")
-    ax2.set_ylabel("BLER")
-    ax2.grid(which="both", linestyle='--', linewidth=0.5)
-    ax2.legend()
-    ax2.set_ylim((1e-5, 1))
+        # Plot BER
+        ax1.semilogy(ebno_dbs_baseline, BER_baseline, label="BER - Baseline")
+        ax1.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
+        ax1.set_ylabel("BER")
+        ax1.grid(which="both", linestyle='--', linewidth=0.5)
+        ax1.legend()
+        ax1.set_ylim((1e-5, 1))
+
+        # Plot BLER
+        ax2.semilogy(ebno_dbs_baseline, BLER_baseline, label="BLER - Baseline")
+        ax2.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
+        ax2.set_xlabel(r"$E_b/N_0$ (dB)")
+        ax2.set_ylabel("BLER")
+        ax2.grid(which="both", linestyle='--', linewidth=0.5)
+        ax2.legend()
+        ax2.set_ylim((1e-5, 1))
 
     # Adjust layout and save
     plt.tight_layout()
@@ -302,6 +320,6 @@ def plot_single_baseline_ber_bler(file_name, papr_limit):
 
 # plot_baseline_ber_bler(file_names, papr_limits)
 
-#plot_single_baseline_ber_bler('bler_results_baseline.pkl',5.5)
+plot_single_baseline_ber_bler('bler_results_baseline.pkl')
 
 plot_constellation_baseline("constellation_data_QAM64.pkl")

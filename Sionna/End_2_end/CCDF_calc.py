@@ -164,7 +164,7 @@ for ebno_db, x_rrcf_signal in loaded_signals.items():
     ccdf = ccdf_calculator.compute_ccdf(x_rrcf_tensor, thresholds_linear)
 
     # Plot CCDF for the current Eb/N0
-    plt.plot(thresholds_db, ccdf.numpy(), label=f"QAM 64 = {ebno_db:.1f} dB")
+    plt.plot(thresholds_db, ccdf.numpy(), label=f"QAM 64 dB, $\\beta$ = 0.3")
 
 # Customize the plot
 plt.xlabel("Normalized Power (dB)", fontsize=12)
@@ -174,4 +174,6 @@ plt.yscale("log")  # Logarithmic scale for the CCDF
 plt.grid(True, which="both", linestyle="--", linewidth=0.5)
 plt.legend()
 plt.tight_layout()
+plt.savefig("CCDF_Plot",dpi =300)
 plt.show()
+

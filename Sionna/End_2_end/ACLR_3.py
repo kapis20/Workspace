@@ -51,12 +51,13 @@ freq_axis = np.linspace(-0.5, 0.5, fft_size) * samples_per_symbol
 
 # Plot PSD /normalzied power and frequency 
 plt.figure(figsize=(12, 6))
-plt.plot(freq_axis, 10 * np.log10(average_psd/np.max(average_psd)), label="PSD (dB)")
+plt.plot(freq_axis, 10 * np.log10(average_psd/np.max(average_psd)), label="64 QAM, $\\beta$ = 0.3")
 plt.title("Power Spectral Density (PSD) of Filtered Signal")
 plt.xlabel("Normalized Frequency")
 plt.ylabel("Power (dB)")
 plt.grid()
 plt.legend()
+plt.savefig("PSD_PLOT_ACLR.png",dpi =300)
 plt.show()
 
 ###################################################################

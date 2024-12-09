@@ -4,7 +4,7 @@ import pickle
 
 # Assume `signal` is your RRC-filtered signal shaped as (batch, num_samples)
 # Example: Replace this with your actual data
-batch_size = 10  # Example batch size
+batch_size = 128  # Example batch size
 num_samples = 4096  # Number of samples in one signal
 
 # File to save the signals

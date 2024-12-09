@@ -90,7 +90,7 @@ alpha_pn = [1.0,2.95]
 
 #Other parametes:
 
-BATCH_SIZE = 10#10 #how many examples are processed by sionna in parallel 
+BATCH_SIZE = 128#10 #how many examples are processed by sionna in parallel 
 
 # Dictionary to store both BER and BLER results for each model
 results_baseline = {
@@ -373,7 +373,7 @@ with open("constellation_data_QAM64.pkl", "wb") as f:
 
 
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
