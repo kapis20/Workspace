@@ -214,8 +214,8 @@ class Baseline(Model): # Inherits from Keras Model
         # Non linear noise - Rapp model 
         ########################################
         self.RappModel = RappPowerAmplifier(
-            saturation_amplitude = 1.35,
-            smoothness_factor = 1.41
+            saturation_amplitude = 0.9,
+            smoothness_factor = 1.93
         )
 
     
@@ -420,7 +420,7 @@ with open(signal_Rappfile, "wb") as f:
     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_Rapp_numpy, f)
 
-signal_mapperFile = "x_mapper.pkl"
-with open(signal_Rappfile, "wb") as f:
-    x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
-    pickle.dump(signal_mapperFile, f)
+# signal_mapperFile = "x_mapper.pkl"
+# with open(signal_Rappfile, "wb") as f:
+#     x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
+#     pickle.dump(signal_mapperFile, f)
