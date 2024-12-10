@@ -106,6 +106,8 @@ x_rrcf_Rapp_signals = {} #Store noisy signals
 
 bits_after_mapper = {} #store bits after mapper
 
+bits_before_demapper = {}#store symbols before demapper
+
 #Dictionary to store constellation data 
 constellation_baseline = {}
 constellation_data_list = []
@@ -352,7 +354,7 @@ class Baseline(Model): # Inherits from Keras Model
         decoded_bits = self.decoder(llr_de)
 
 
-        return uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp, x
+        return uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp, x, y_ds
 
 
 
@@ -377,13 +379,14 @@ selected_ebno_dbs = [9]  # Adjust as needed
 for ebno_db in selected_ebno_dbs:
     # Forward pass through the model
     print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
-    uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp,x = model(BATCH_SIZE, ebno_db)
+    uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp, x, y_ds = model(BATCH_SIZE, ebno_db)
     
     # Save the `x_rrcf` signal (post-PAPR enforcement)
     # Assuming `x_rrcf` is stored in the model during the forward pass
     x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
     x_rrcf_Rapp_signals[ebno_db] = x_rrcf_Rapp
     bits_after_mapper[ebno_db] = x
+    bits_before_demapper[ebno_db] = y_ds
 
 
 print("All selected Eb/N0 evaluations completed.")
@@ -420,7 +423,13 @@ with open(signal_Rappfile, "wb") as f:
     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_Rapp_numpy, f)
 
-# signal_mapperFile = "x_mapper.pkl"
-# with open(signal_Rappfile, "wb") as f:
-#     x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
-#     pickle.dump(signal_mapperFile, f)
+signal_mapperFile = "x_mapper.pkl"
+with open(signal_mapperFile, "wb") as f:
+    x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
+    pickle.dump(x_mapper, f)
+
+
+signal_demapperFile = "y_demapper.pkl"
+with open(signal_demapperFile, "wb") as f:
+    y_demapper = {ebno_db: x.numpy() for ebno_db, x in bits_before_demapper.items()}  # Convert to NumPy for storage
+    pickle.dump(y_demapper, f)

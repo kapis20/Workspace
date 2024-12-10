@@ -42,20 +42,27 @@ import pickle
 #Custom functions:
 from Padding_utils import PaddingFunction
 
+
+
+###############################################
+# Custom imports 
+###############################################
+from RappPowerAmp import RappPowerAmplifier
+
 # Initialize timing for entire script
 start_time = time.time()
 
 ###############################################
 # SNR range for evaluation and training [dB]
 ###############################################
-ebno_db_min = 4.0 #in sim it was 6
+ebno_db_min = 6.0 #in sim it was 6
 ebno_db_max = 18.0
 
 ###############################################
 # Modulation and coding configuration
 ###############################################
 num_bits_per_symbol = 6 # Baseline is 64-QAM
-modulation_order = 2**num_bits_per_symbol
+#modulation_order = 2**num_bits_per_symbol
 coderate = 0.75 #0.75 # Coderate for the outer code
 n = 4092 #4098 #4096 Codeword length [bit]. Must be a multiple of num_bits_per_symbol
 num_symbols_per_codeword = n//num_bits_per_symbol # Number of modulated baseband symbols per codeword
@@ -67,8 +74,8 @@ span_in_symbols = 32 # Filter span in symbold
 samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling factor
 
 
-BATCH_SIZE = 10#10 #how many examples are processed by sionna in parallel 
-
+BATCH_SIZE = 128#10 #how many examples are processed by sionna in parallel 
+lenght_of_block = int(num_symbols_per_codeword)
 #Name to store weights 
 model_weights_path = "weights-neural-demapper"
 ##############################################
@@ -96,7 +103,13 @@ loss_values = []
 #     "after_training": {}
 # } Perhaps something to look into the future 
 
+x_rrcf_signals = {}  # Dictionary to store signals for each Eb/N0 value
 
+x_rrcf_Rapp_signals = {} #Store noisy signals 
+
+bits_after_mapper = {} #store bits after mapper
+
+bits_before_demapper = {}#store symbols before demapper
     
 ###############################################
 #Cystom layers - Demapper 
@@ -178,6 +191,14 @@ class End2EndSystem(Model): # Inherits from Keras Model
            
             #initialize encoder and decoder if not in training mode 
             self.encoder = LDPC5GEncoder(k,n, num_bits_per_symbol) #pass no of info bits and lenght of the codeword, and bits per symbol
+            
+             ########################################
+            # Non linear noise - Rapp model 
+            ########################################
+            self.RappModel = RappPowerAmplifier(
+                saturation_amplitude = 0.9,
+                smoothness_factor = 1.93
+            )
 
             
 
@@ -214,6 +235,9 @@ class End2EndSystem(Model): # Inherits from Keras Model
             #that produces codeword of lenght n 
             bits = self.encoder(uncoded_bits)
             bits = self.interleaver(bits)
+             #############################
+        
+            
         # Reshape bits to [batch_size, num_symbols_per_codeword, num_bits_per_symbol]
         # bits_reshaped = tf.reshape(bits, [batch_size, num_symbols_per_codeword, num_bits_per_symbol])
         #Map bits to symbols:
@@ -227,7 +251,12 @@ class End2EndSystem(Model): # Inherits from Keras Model
         #Filter the upsampled sequence 
         x_rrcf = self.rrcf(x_us)#, padding = "same")
 
-        ############################
+          ############################
+        if not self.training:  # Apply Rapp model only in inference mode
+           # Rapp noise addition 
+            ############################
+            x_rrcf = self.RappModel(x_rrcf)
+            ############################
         #Channel:
         ############################
         y = self.awgn_channel([x_rrcf, no]) #passed symbols to the channel together with noise variance 
@@ -262,7 +291,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
             llr = self.deinterlever(llr)
             llr = tf.reshape(llr, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
             decoded_bits = self.decoder(llr)
-            return uncoded_bits, decoded_bits
+            return uncoded_bits, decoded_bits, x_rrcf, x, y_ds
         
 
 
@@ -272,7 +301,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 30000 #was used 30000
+NUM_TRAINING_ITERATIONS = 20000 #was used 30000
 
 # Set a seed for reproducibility
 tf.random.set_seed(42)
@@ -314,7 +343,7 @@ training_end_time = time.time()
 constellation_data['constellation_after'] = model_train.constellation.points.numpy()
 
 # Save constellation data to a .pkl file
-with open("constellation_data.pkl", "wb") as f:
+with open("constellation_dataNN.pkl", "wb") as f:
     pickle.dump(constellation_data, f)
 
 
@@ -345,6 +374,19 @@ def load_weights(model, model_weights_path):
 #model eval
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
+
+selected_ebno_dbs = [9]  # Adjust as needed
+# Evaluate model and collect signals
+for ebno_db in selected_ebno_dbs:
+    # Forward pass through the model
+    print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
+    uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, ebno_db)
+    x_rrcf_Rapp_signals[ebno_db] = x_rrcf
+    bits_after_mapper[ebno_db] = x
+    bits_before_demapper[ebno_db] = y_ds
+
+print("All selected Eb/N0 evaluations completed.")
+
 ber_NN, bler_NN = sim_ber(
     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=10000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
@@ -352,27 +394,33 @@ results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
 # Save the results to a file (optional)
-with open("bler_results.pkl", 'wb') as f:
+with open("bler_resultsNN.pkl", 'wb') as f:
     pickle.dump((results), f)
 
-# Define Eb/N0 range for simulation
-EBN0_DB_MIN = 6.0  # Minimum Eb/N0 in dB
-EBN0_DB_MAX = 18.0  # Maximum Eb/N0 in dB
+# # Save the x_rrcf signals to a file (as NumPy or TF tensors)
+# signal_file = "x_rrcf_signals_no_clippingNN.pkl"
+# with open(signal_file, "wb") as f:
+#     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
+#     pickle.dump(x_rrcf_numpy, f)
 
-# # Create PlotBER instance for plotting
-# ber_plots = PlotBER()
 
-# # Run simulation and plot
-# ber_plots.simulate(
-#     model,
-#     ebno_dbs=np.linspace(EBN0_DB_MIN, EBN0_DB_MAX, 20),  # 20 points in Eb/N0 range
-#     batch_size=BATCH_SIZE,
-#     num_target_block_errors=100,  # Stop after observing 100 block errors per Eb/N0 point
-#     legend="Trained model",
-#     soft_estimates=True,  # Use soft estimates for demapping
-#     max_mc_iter=100,  # Max number of Monte Carlo iterations
-#     show_fig=True  # Display the plot
-# )
+signal_Rappfile = "x_rrcf_RappNN.pkl"
+with open(signal_Rappfile, "wb") as f:
+    x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
+    pickle.dump(x_rrcf_Rapp_numpy, f)
+
+signal_mapperFile = "x_mapperNN.pkl"
+with open(signal_mapperFile, "wb") as f:
+    x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
+    pickle.dump(x_mapper, f)
+
+
+signal_demapperFile = "y_demapperNN.pkl"
+with open(signal_demapperFile, "wb") as f:
+    y_demapper = {ebno_db: x.numpy() for ebno_db, x in bits_before_demapper.items()}  # Convert to NumPy for storage
+    pickle.dump(y_demapper, f)
+
+
 
 #Time calculations: 
 # Calculate and print total execution time

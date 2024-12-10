@@ -289,7 +289,42 @@ def plot_single_baseline_ber_bler(file_name, papr_limit = None):
 
 
 
-
+def plot_grid_constellation(mapper_file="x_mapper.pkl", demapper_file="y_demapper.pkl"):
+    # Load signals from the mapper and demapper files
+    with open(mapper_file, "rb") as f:
+        loaded_mapper_signals = pickle.load(f)
+    
+    with open(demapper_file, "rb") as f:
+        loaded_demapper_signals = pickle.load(f)
+    
+    # Iterate through the Eb/N0 values (assuming both files have the same Eb/N0 keys)
+    for ebno_db, x_mapper_signal in loaded_mapper_signals.items():
+        print(f"Processing EB/N0 = {ebno_db} dB...")
+        
+        # Retrieve signals
+        x_mapper_signal = np.array(x_mapper_signal)  # Signal after mapper
+        y_demapper_signal = np.array(loaded_demapper_signals[ebno_db])  # Signal before demapper
+        
+        # Flatten signals for plotting
+        x_mapper_flat = x_mapper_signal.flatten()
+        y_demapper_flat = y_demapper_signal.flatten()
+        
+        # Plot the constellation
+        plt.figure(figsize=(8, 8))
+        plt.gca().set_aspect('equal')
+        plt.grid(True, linestyle='-', linewidth=0.5)
+        
+       # Plot mapper output (input constellation points)
+        plt.scatter(np.real(x_mapper_flat), np.imag(x_mapper_flat), alpha=1.0, label='Input', color='orange', s=120, zorder=3)
+        
+        # Plot demapper input (distorted constellation points)
+        plt.scatter(np.real(y_demapper_flat), np.imag(y_demapper_flat), alpha=0.5, label='Output', color='blue', s=50, zorder=2)
+        
+        plt.title(f"Constellation Distortion", fontsize=16)
+        plt.xlabel("In-phase", fontsize=14)
+        plt.ylabel("Quadrature", fontsize=14)
+        plt.legend(fontsize=12)
+        plt.show()
 ##################################################
 #calling functions 
 ##################################################
@@ -323,3 +358,5 @@ def plot_single_baseline_ber_bler(file_name, papr_limit = None):
 plot_single_baseline_ber_bler('bler_results_baseline.pkl')
 
 plot_constellation_baseline("constellation_data_QAM64.pkl")
+
+plot_grid_constellation()
