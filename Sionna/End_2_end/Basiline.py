@@ -273,7 +273,7 @@ class Baseline(Model): # Inherits from Keras Model
         #############################
         # Rapp noise addition 
         ############################
-        x_rrcf_Rapp = self.RappModel(x_rrcf)
+        #x_rrcf_Rapp = self.RappModel(x_rrcf)
         #tf.print("Shape of x_rrcf_Rapp is:", tf.shape(x_rrcf_Rapp))
         #tf.print("ACLR is (db)",10*np.log10(self.rrcf.aclr))
         # tf.print("Type of rrcf:", type(self.rrcf))
@@ -312,7 +312,7 @@ class Baseline(Model): # Inherits from Keras Model
         ##############################
         # Channel 
         ##############################
-        y = self.awgn_channel([x_rrcf_Rapp, no])
+        y = self.awgn_channel([x_rrcf, no])
         ############################
         #matched filter, downsampling 
         ############################
@@ -354,7 +354,7 @@ class Baseline(Model): # Inherits from Keras Model
         decoded_bits = self.decoder(llr_de)
 
 
-        return uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp, x, y_ds
+        return uncoded_bits, decoded_bits, x_rrcf, x, y_ds
 
 
 
@@ -379,12 +379,12 @@ selected_ebno_dbs = [9]  # Adjust as needed
 for ebno_db in selected_ebno_dbs:
     # Forward pass through the model
     print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
-    uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp, x, y_ds = model(BATCH_SIZE, ebno_db)
+    uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, ebno_db)
     
     # Save the `x_rrcf` signal (post-PAPR enforcement)
     # Assuming `x_rrcf` is stored in the model during the forward pass
     x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
-    x_rrcf_Rapp_signals[ebno_db] = x_rrcf_Rapp
+    #x_rrcf_Rapp_signals[ebno_db] = x_rrcf_Rapp
     bits_after_mapper[ebno_db] = x
     bits_before_demapper[ebno_db] = y_ds
 
@@ -401,7 +401,7 @@ with open("constellation_data_QAM64.pkl", "wb") as f:
 
 
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=10000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=2000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
@@ -418,10 +418,10 @@ with open(signal_file, "wb") as f:
     pickle.dump(x_rrcf_numpy, f)
 
 
-signal_Rappfile = "x_rrcf_Rapp.pkl"
-with open(signal_Rappfile, "wb") as f:
-    x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
-    pickle.dump(x_rrcf_Rapp_numpy, f)
+# signal_Rappfile = "x_rrcf_Rapp.pkl"
+# with open(signal_Rappfile, "wb") as f:
+#     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
+#     pickle.dump(x_rrcf_Rapp_numpy, f)
 
 signal_mapperFile = "x_mapper.pkl"
 with open(signal_mapperFile, "wb") as f:
