@@ -252,11 +252,11 @@ class End2EndSystem(Model): # Inherits from Keras Model
         x_rrcf = self.rrcf(x_us)#, padding = "same")
 
           ############################
-        if not self.training:  # Apply Rapp model only in inference mode
-           # Rapp noise addition 
-            ############################
-            x_rrcf = self.RappModel(x_rrcf)
-            ############################
+        # if not self.training:  # Apply Rapp model only in inference mode
+        #    # Rapp noise addition 
+        #     ############################
+        #     x_rrcf = self.RappModel(x_rrcf)
+        #     ############################
         #Channel:
         ############################
         y = self.awgn_channel([x_rrcf, no]) #passed symbols to the channel together with noise variance 
@@ -319,42 +319,42 @@ constellation_data['constellation_before']= model_train.constellation.points.num
 # Adam optimizer (SGD variant)
 optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001)
 
-# Training loop
-for i in range(NUM_TRAINING_ITERATIONS):
+# # Training loop
+# for i in range(NUM_TRAINING_ITERATIONS):
 
    
-    # Forward pass
-    with tf.GradientTape() as tape:
-        loss = model_train(BATCH_SIZE, 6.5)#6.0) #training Eb/No set to 6dB, get loss function for the most optimized under 6dB 
-        #The model is assumed to return the BMD rate
-        #store the current loss value 
-        loss_values.append(loss.numpy())
-    # Computing and applying gradients
-    grads = tape.gradient(loss, model_train.trainable_weights)
-    optimizer.apply_gradients(zip(grads, model_train.trainable_weights))
-    # Print progress
-    if i % 100 == 0:
-        print(f"{i}/{NUM_TRAINING_ITERATIONS}  Loss: {loss:.2E}", end="\r")
+#     # Forward pass
+#     with tf.GradientTape() as tape:
+#         loss = model_train(BATCH_SIZE, 6.5)#6.0) #training Eb/No set to 6dB, get loss function for the most optimized under 6dB 
+#         #The model is assumed to return the BMD rate
+#         #store the current loss value 
+#         loss_values.append(loss.numpy())
+#     # Computing and applying gradients
+#     grads = tape.gradient(loss, model_train.trainable_weights)
+#     optimizer.apply_gradients(zip(grads, model_train.trainable_weights))
+#     # Print progress
+#     if i % 100 == 0:
+#         print(f"{i}/{NUM_TRAINING_ITERATIONS}  Loss: {loss:.2E}", end="\r")
 
-# End time for training
-training_end_time = time.time()
+# # End time for training
+# training_end_time = time.time()
 
-# Extract and save constellation data after training
-constellation_data['constellation_after'] = model_train.constellation.points.numpy()
+# # Extract and save constellation data after training
+# constellation_data['constellation_after'] = model_train.constellation.points.numpy()
 
-# Save constellation data to a .pkl file
-with open("constellation_dataNN.pkl", "wb") as f:
-    pickle.dump(constellation_data, f)
+# # Save constellation data to a .pkl file
+# with open("constellation_dataNN.pkl", "wb") as f:
+#     pickle.dump(constellation_data, f)
 
 
-# Save the weightsin a file
-weights = model_train.get_weights()
-with open(model_weights_path, 'wb') as f:
-    pickle.dump(weights, f)
+# # Save the weightsin a file
+# weights = model_train.get_weights()
+# with open(model_weights_path, 'wb') as f:
+#     pickle.dump(weights, f)
 
-# Save loss function values to a file
-with open("loss_values.pkl","wb") as f:
-    pickle.dump(loss_values,f)
+# # Save loss function values to a file
+# with open("loss_values.pkl","wb") as f:
+#     pickle.dump(loss_values,f)
 ##################################################
 #model evaluation 
 ##################################################
@@ -381,14 +381,14 @@ for ebno_db in selected_ebno_dbs:
     # Forward pass through the model
     print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
     uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, ebno_db)
-    x_rrcf_Rapp_signals[ebno_db] = x_rrcf
+    x_rrcf_signals[ebno_db] = x_rrcf
     bits_after_mapper[ebno_db] = x
     bits_before_demapper[ebno_db] = y_ds
 
 print("All selected Eb/N0 evaluations completed.")
 
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=10000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
@@ -397,17 +397,17 @@ results['BER']['autoencoder-NN'] = ber_NN.numpy()
 with open("bler_resultsNN.pkl", 'wb') as f:
     pickle.dump((results), f)
 
-# # Save the x_rrcf signals to a file (as NumPy or TF tensors)
-# signal_file = "x_rrcf_signals_no_clippingNN.pkl"
-# with open(signal_file, "wb") as f:
-#     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
-#     pickle.dump(x_rrcf_numpy, f)
+# Save the x_rrcf signals to a file (as NumPy or TF tensors)
+signal_file = "x_rrcf_signals_no_clippingNN.pkl"
+with open(signal_file, "wb") as f:
+    x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
+    pickle.dump(x_rrcf_numpy, f)
 
 
-signal_Rappfile = "x_rrcf_RappNN.pkl"
-with open(signal_Rappfile, "wb") as f:
-    x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
-    pickle.dump(x_rrcf_Rapp_numpy, f)
+# signal_Rappfile = "x_rrcf_RappNN.pkl"
+# with open(signal_Rappfile, "wb") as f:
+#     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
+#     pickle.dump(x_rrcf_Rapp_numpy, f)
 
 signal_mapperFile = "x_mapperNN.pkl"
 with open(signal_mapperFile, "wb") as f:
