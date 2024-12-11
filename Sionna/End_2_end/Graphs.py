@@ -135,7 +135,7 @@ def plot_constellation(constellation_data_filename, stage="constellation_before"
     
     # Plot the constellation points
     plt.figure(figsize=(6, 6))
-    plt.scatter(real, imag, label=f"Constellation Points ({stage})", color='orange')
+    plt.scatter(real, imag,color ='green') #label=f"Constellation Points ({stage})", color='green')
     
     # Annotate each point with its binary representation
     for i, point in enumerate(points):
@@ -353,11 +353,11 @@ def plot_grid_constellation(mapper_file="x_mapper.pkl", demapper_file="y_demappe
 plot_ber_bler("bler_results_correct_1.pkl","bler_results_baseline_correct_1.pkl","bler_results_impairedNN.pkl","bler_results_baseline_impaired.pkl")
 # #plot_ber_bler_NN("bler_results.pkl")
 
-# # Plot the constellation before training
-# plot_constellation("constellation_data.pkl", stage="constellation_before", num_bits_per_symbol=6)
+# Plot the constellation before training
+plot_constellation("constellation_dataNN.pkl", stage="constellation_before", num_bits_per_symbol=6)
 
-# # Plot the constellation after training
-# plot_constellation("constellation_data.pkl", stage="constellation_after", num_bits_per_symbol=6)
+# Plot the constellation after training
+plot_constellation("constellation_dataNN.pkl", stage="constellation_after", num_bits_per_symbol=6)
 
 # # Plot baseline constellation
 # #plot_constellation_baseline("constellation_baseline.pkl")

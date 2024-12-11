@@ -375,7 +375,7 @@ def load_weights(model, model_weights_path):
 model = End2EndSystem(training=False) #End2EndSystem model to run on the previously generated weights 
 load_weights(model, model_weights_path)
 
-selected_ebno_dbs = [9]  # Adjust as needed
+selected_ebno_dbs = [6.5]  # Adjust as needed
 # Evaluate model and collect signals
 for ebno_db in selected_ebno_dbs:
     # Forward pass through the model
@@ -388,7 +388,7 @@ for ebno_db in selected_ebno_dbs:
 print("All selected Eb/N0 evaluations completed.")
 
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
@@ -424,9 +424,9 @@ with open(signal_demapperFile, "wb") as f:
 
 #Time calculations: 
 # Calculate and print total execution time
-end_time = time.time()
-total_execution_time = end_time - start_time
-training_execution_time = training_end_time - training_start_time
+#end_time = time.time()
+#total_execution_time = end_time - start_time
+#training_execution_time = training_end_time - training_start_time
 
-print(f"\nTotal Execution Time: {total_execution_time:.2f} seconds")
-print(f"Training Execution Time: {training_execution_time:.2f} seconds")
+# print(f"\nTotal Execution Time: {total_execution_time:.2f} seconds")
+# print(f"Training Execution Time: {training_execution_time:.2f} seconds")

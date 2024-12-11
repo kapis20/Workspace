@@ -128,7 +128,9 @@ class CCDFCalculator:
 
 # File to save the signals
 signal_file = "x_rrcf_signals_no_clipping.pkl"
-signal_file_noisy = "x_rrcf_Rapp.pkl"
+#signal_file_noisy = "x_rrcf_Rapp.pkl"
+
+signal_file_noisy = "x_rrcf_signals_no_clippingNN.pkl"
 
 
 
@@ -167,7 +169,7 @@ for ebno_db, x_rrcf_signal in loaded_signals.items():
     ccdf = ccdf_calculator.compute_ccdf(x_rrcf_tensor, thresholds_linear)
 
     # Plot CCDF for the current Eb/N0
-    plt.plot(thresholds_db, ccdf.numpy(), label=f"QAM 64 dB, $\\beta$ = 0.3")
+    plt.plot(thresholds_db, ccdf.numpy(), label=f"64 QAM, $\\beta$ = 0.3")
 
 # Plot for loaded_signals_noisy
 for ebno_db, x_rrcf_signal in loaded_signals_noisy.items():
@@ -180,7 +182,8 @@ for ebno_db, x_rrcf_signal in loaded_signals_noisy.items():
     ccdf = ccdf_calculator.compute_ccdf(x_rrcf_tensor, thresholds_linear)
 
     # Plot CCDF for the current Eb/N0
-    plt.plot(thresholds_db, ccdf.numpy(), linestyle='--', label=f"Noisy Signals: Eb/N0 = {ebno_db:.1f} dB")
+    # plt.plot(thresholds_db, ccdf.numpy(), linestyle='--', label=f"Noisy Signals: Eb/N0 = {ebno_db:.1f} dB")
+    plt.plot(thresholds_db, ccdf.numpy(), label=f"NN model")
 # Customize the plot
 plt.xlabel("Normalized Power (dB)", fontsize=12)
 plt.ylabel("CCDF (Probability)", fontsize=12)
@@ -190,5 +193,8 @@ plt.grid(True, which="both", linestyle="--", linewidth=0.5)
 plt.legend()
 plt.tight_layout()
 plt.savefig("CCDF_Plot",dpi =300)
+plt.xlim(1,8)
+plt.ylim(10e-6)
 plt.show()
+
 

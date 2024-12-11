@@ -21,6 +21,7 @@ samples_per_symbol = 4
 # File to save the signals
 signal_file = "x_rrcf_signals_no_clipping.pkl"
 signal_file_noisy = "x_rrcf_Rapp.pkl"
+#signal_file_noisy="x_rrcf_signals_no_clippingNN.pkl"
 
 
 # Load signals from the file
@@ -101,23 +102,55 @@ plt.plot(
     freq_axis,
     10 * np.log10(average_psd_noisy),
     #10 * np.log10(average_psd_noisy / np.max(average_psd_noisy)),
-    linestyle="--",
-    color ="red",
-    label="Noisy Signal with RAPP"
+    #linestyle="--",
+    color ="green",
+    label="NN model"
 )
     
-plt.title("Power Spectral Density (PSD) of original signal vs RAPP distorted signal")
+plt.title("Power Spectral Density (PSD) of 64 QAM and NN model")
 plt.xlabel("Normalized Frequency")
 plt.ylabel("Power (dB)")
 plt.grid()
 plt.legend()
 plt.savefig("PSD_PLOT_ACLR.png",dpi =300)
 plt.show()
+#############################################
+#
+#############################################
+# Create figure and subplots
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))  # 2 rows, 1 column
 
+# First subplot: 64 QAM
+ax1.plot(freq_axis, 10 * np.log10(average_psd), label="64 QAM, $\\beta$ = 0.3")
+ax1.set_title("Power Spectral Density (PSD) of 64 QAM")
+ax1.set_xlabel("Normalized Frequency")
+ax1.set_ylabel("Power (dB)")
+ax1.grid()
+ax1.legend()
 
+# Second subplot: NN Model
+ax2.plot(
+    freq_axis,
+    10 * np.log10(average_psd_noisy),
+    color="green",
+    label="NN Model"
+)
+ax2.set_title("Power Spectral Density (PSD) of NN Model")
+ax2.set_xlabel("Normalized Frequency")
+ax2.set_ylabel("Power (dB)")
+ax2.grid()
+ax2.legend()
+
+# Adjust layout and save
+plt.tight_layout()
+plt.savefig("PSD_PLOT_ACLR.png", dpi=300)
+plt.show()
+#############################################
+#
+#############################################
 plt.figure(figsize=(12, 6))
-plt.plot(signal_batch[0], label="Original Signal")
-plt.plot(signal_batch_with_RAPP[0], label="Noisy Signal with RAPP")
+plt.plot(signal_batch[0], label="63 QAM")
+plt.plot(signal_batch_with_RAPP[0], label="NN model")
 plt.title("Signal Comparison (Time Domain)")
 plt.xlabel("Sample Index")
 plt.ylabel("Amplitude")
