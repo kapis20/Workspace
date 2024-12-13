@@ -309,7 +309,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
 ###################################################
 
 # Number of iterations used for training
-NUM_TRAINING_ITERATIONS = 1 #was used 30000
+NUM_TRAINING_ITERATIONS = 10000 #was used 30000
 
 # Set a seed for reproducibility
 tf.random.set_seed(42)
@@ -407,7 +407,7 @@ load_weights(model, model_weights_path)
 ###################################################
 
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=10000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
