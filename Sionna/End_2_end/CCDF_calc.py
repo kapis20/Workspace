@@ -130,7 +130,7 @@ class CCDFCalculator:
 signal_file = "x_rrcf_signals_no_clipping.pkl"
 #signal_file_noisy = "x_rrcf_Rapp.pkl"
 
-signal_file_noisy = "x_rrcf_signals_no_clippingNN.pkl"
+signal_file_noisy = "x_rrcf_signals_no_clippingNN_conv.pkl"
 
 
 

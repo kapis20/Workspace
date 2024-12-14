@@ -20,8 +20,8 @@ samples_per_symbol = 4
 
 # File to save the signals
 signal_file = "x_rrcf_signals_no_clipping.pkl"
-signal_file_noisy = "x_rrcf_Rapp.pkl"
-#signal_file_noisy="x_rrcf_signals_no_clippingNN.pkl"
+#signal_file_noisy = "x_rrcf_Rapp.pkl"
+signal_file_noisy="x_rrcf_signals_no_clippingNN_conv.pkl"
 
 
 # Load signals from the file

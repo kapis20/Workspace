@@ -350,36 +350,33 @@ def save_weights(model_train, model_weights_path):
     weights = model_train.get_weights()
     with open(model_weights_path, 'wb') as f:
         pickle.dump(weights, f)
-
-# Instantiating the end-to-end model for training
-model_train = End2EndSystem(training=True)
-# Extract and save constellation data before training
-constellation_data['constellation_before']= model_train.constellation.points.numpy()
-# Track time for model training
-training_start_time = time.time()
-conventional_training(model_train)
-# Save weights
-save_weights(model_train, model_weights_path)
-# Extract and save constellation data after training
-constellation_data['constellation_after'] = model_train.constellation.points.numpy()
-# End time for training
-training_end_time = time.time()
-
-
-
-# Save constellation data to a .pkl file
-with open("constellation_dataNN.pkl", "wb") as f:
-    pickle.dump(constellation_data, f)
+#####################################
+# Run training 
+#####################################
+# # Instantiating the end-to-end model for training
+# model_train = End2EndSystem(training=True)
+# # Extract and save constellation data before training
+# constellation_data['constellation_before']= model_train.constellation.points.numpy()
+# # Track time for model training
+# training_start_time = time.time()
+# conventional_training(model_train)
+# # Save weights
+# save_weights(model_train, model_weights_path)
+# # Extract and save constellation data after training
+# constellation_data['constellation_after'] = model_train.constellation.points.numpy()
+# # End time for training
+# training_end_time = time.time()
 
 
-# # Save the weightsin a file
-# weights = model_train.get_weights()
-# with open(model_weights_path, 'wb') as f:
-#     pickle.dump(weights, f)
 
-# Save loss function values to a file
-with open("loss_values.pkl","wb") as f:
-    pickle.dump(loss_values,f)
+# # Save constellation data to a .pkl file
+# with open("constellation_dataNN.pkl", "wb") as f:
+#     pickle.dump(constellation_data, f)
+
+
+# # Save loss function values to a file
+# with open("loss_valuesConv.pkl","wb") as f:
+#     pickle.dump(loss_values,f)
 ##################################################
 #model evaluation 
 ##################################################
@@ -406,31 +403,29 @@ load_weights(model, model_weights_path)
 # SNR
 ###################################################
 
-ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=10000,soft_estimates=True) #was used 1000 and 10000
-    #soft estimates added for demapping 
-results['BLER']['autoencoder-NN'] = bler_NN.numpy()
-results['BER']['autoencoder-NN'] = ber_NN.numpy()
+# ber_NN, bler_NN = sim_ber(
+#     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=10000,soft_estimates=True) #was used 1000 and 10000
+#     #soft estimates added for demapping 
+# results['BLER']['autoencoder-NN'] = bler_NN.numpy()
+# results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
-# Save the results to a file (optional)
-with open("bler_resultsNN_conv.pkl", 'wb') as f:
-    pickle.dump((results), f)
+# # Save the results to a file (optional)
+# with open("bler_resultsNN_conv.pkl", 'wb') as f:
+#     pickle.dump((results), f)
 
 
 ##############################################
 # Signals from the model
 # ########################################### 
 
-selected_ebno_dbs = [9]  # Adjust as needed
-# Evaluate model and collect signals
-for ebno_db in selected_ebno_dbs:
-    # Forward pass through the model
-    print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
-    uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, ebno_db)
-    x_rrcf_signals[ebno_db] = x_rrcf
-    bits_after_mapper[ebno_db] = x
-    bits_before_demapper[ebno_db] = y_ds
-
+selected_ebno_dbs = 9.0  # Adjust as needed
+selected_ebno_dbs = tf.constant(selected_ebno_dbs, dtype=tf.float32)  # Convert to TensorFlow tensor
+print(f"Starting evaluation for Eb/N0 = {selected_ebno_dbs} dB...")  # Print current Eb/N0
+uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, selected_ebno_dbs)
+selected_ebno_dbs_value = selected_ebno_dbs.numpy()  # Convert tensor to a Python float
+x_rrcf_signals[selected_ebno_dbs_value] = x_rrcf
+bits_after_mapper[selected_ebno_dbs_value] = x
+bits_before_demapper[selected_ebno_dbs_value] = y_ds
 print("All selected Eb/N0 evaluations completed.")
 
 
@@ -460,11 +455,11 @@ with open(signal_demapperFile, "wb") as f:
 
 
 
-# Time calculations: 
-# Calculate and print total execution time
-end_time = time.time()
-total_execution_time = end_time - start_time
-training_execution_time = training_end_time - training_start_time
+# # Time calculations: 
+# # Calculate and print total execution time
+# end_time = time.time()
+# total_execution_time = end_time - start_time
+# training_execution_time = training_end_time - training_start_time
 
-print(f"\nTotal Execution Time: {total_execution_time:.2f} seconds")
-print(f"Training Execution Time: {training_execution_time:.2f} seconds")
+# print(f"\nTotal Execution Time: {total_execution_time:.2f} seconds")
+# print(f"Training Execution Time: {training_execution_time:.2f} seconds")

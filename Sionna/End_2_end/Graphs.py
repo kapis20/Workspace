@@ -350,7 +350,7 @@ def plot_grid_constellation(mapper_file="x_mapper.pkl", demapper_file="y_demappe
 #calling functions 
 ##################################################
 # Plot the BER and BLER results from "bler_results.pkl"
-plot_ber_bler("bler_results_correct_1.pkl","bler_results_baseline_correct_1.pkl","bler_results_impairedNN.pkl","bler_results_baseline_impaired.pkl")
+plot_ber_bler("bler_results_correct_1.pkl","bler_results_baseline_correct_1.pkl","bler_resultsNN_conv.pkl","bler_results_baseline_impaired.pkl")
 # #plot_ber_bler_NN("bler_results.pkl")
 
 # Plot the constellation before training
@@ -362,9 +362,9 @@ plot_constellation("constellation_dataNN.pkl", stage="constellation_after", num_
 # # Plot baseline constellation
 # #plot_constellation_baseline("constellation_baseline.pkl")
 
-# #plot loss function:
+#plot loss function:
 
-# plot_loss_function("loss_values.pkl","loss_values_plot.png")
+plot_loss_function("loss_values.pkl","loss_values_plot.png")
 
 # Example usage
 # file_names = [
