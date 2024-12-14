@@ -56,14 +56,14 @@ def plot_ber_bler(results_filename,baseline_filename,NNimpaired, baselineImpaire
     ax1.set_ylabel("BER")
     ax1.grid(which="both", linestyle='--', linewidth=0.5)
     ax1.legend()
-    ax1.set_ylim((1e-3, 1))
+    ax1.set_ylim((1e-3, 0.3))
     ax1.set_xlim((6, 11))
 
     # Plot BLER on the bottom subplot
-    ax2.semilogy(ebno_dbs_nn, BLER_nn, 'o-', c='C0', label='BLER - NN model')
-    ax2.semilogy(ebno_dbs_baseline, BLER_baseline, 'o-', c='C1', label='BLER - 64 QAM')
-    ax2.semilogy(ebno_dbs_impaired_nn, BLER_impaired_nn, 'o-', c='C2', label='BLER - NN model impaired')
-    ax2.semilogy(ebno_dbs_impaired_baseline, BLER_impaired_baseline, 'o-', c='C3', label='BLER - 64 QAM impaired')
+    ax2.semilogy(ebno_dbs_nn, BLER_nn, 'o-', c='C1', label='BLER - NN model')
+    ax2.semilogy(ebno_dbs_baseline, BLER_baseline, 'o-', c='C2', label='BLER - 64 QAM')
+    ax2.semilogy(ebno_dbs_impaired_nn, BLER_impaired_nn, 'o-', c='C3', label='BLER - NN model impaired')
+    ax2.semilogy(ebno_dbs_impaired_baseline, BLER_impaired_baseline, 'o-', c='C4', label='BLER - 64 QAM impaired')
     #ax2.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
     ax2.set_xlabel(r"$E_b/N_0$ (dB)")
     ax2.set_ylabel("BLER")
@@ -350,7 +350,7 @@ def plot_grid_constellation(mapper_file="x_mapper.pkl", demapper_file="y_demappe
 #calling functions 
 ##################################################
 # Plot the BER and BLER results from "bler_results.pkl"
-plot_ber_bler("bler_results_correct_1.pkl","bler_results_baseline_correct_1.pkl","bler_resultsNN_conv.pkl","bler_results_baseline_impaired.pkl")
+plot_ber_bler("bler_resultsNN_conv_no_imp.pkl","bler_results_baseline_correct_1.pkl","bler_resultsNN_conv.pkl","bler_results_baseline_impaired.pkl")
 # #plot_ber_bler_NN("bler_results.pkl")
 
 # Plot the constellation before training
