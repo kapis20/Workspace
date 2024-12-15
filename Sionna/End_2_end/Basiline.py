@@ -216,8 +216,8 @@ class Baseline(Model): # Inherits from Keras Model
         # Non linear noise - Rapp model 
         ########################################
         self.RappModel = RappPowerAmplifier(
-            saturation_amplitude = 0.9,
-            smoothness_factor = 1.93
+            saturation_amplitude = 1,
+            smoothness_factor = 3
         )
 
     
@@ -271,9 +271,9 @@ class Baseline(Model): # Inherits from Keras Model
 
 
         #############################
-        # Rapp noise addition 
-        ############################
-        #x_rrcf_Rapp = self.RappModel(x_rrcf)
+        #Rapp noise addition 
+        ###########################
+        x_rrcf_Rapp = self.RappModel(x_rrcf)
         #tf.print("Shape of x_rrcf_Rapp is:", tf.shape(x_rrcf_Rapp))
         #tf.print("ACLR is (db)",10*np.log10(self.rrcf.aclr))
         # tf.print("Type of rrcf:", type(self.rrcf))
@@ -312,7 +312,7 @@ class Baseline(Model): # Inherits from Keras Model
         ##############################
         # Channel 
         ##############################
-        y = self.awgn_channel([x_rrcf, no])
+        y = self.awgn_channel([x_rrcf_Rapp, no])
         ############################
         #matched filter, downsampling 
         ############################
@@ -400,19 +400,19 @@ with open("constellation_data_QAM64.pkl", "wb") as f:
 
 
 
-ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=2000,soft_estimates=True) #was used 1000 and 10000
-    #soft estimates added for demapping 
-results_baseline['BLER']['baseline'] = bler_NN.numpy()
-results_baseline['BER']['baseline'] = ber_NN.numpy()
+# ber_NN, bler_NN = sim_ber(
+#     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=2000,soft_estimates=True) #was used 1000 and 10000
+#     #soft estimates added for demapping 
+# results_baseline['BLER']['baseline'] = bler_NN.numpy()
+# results_baseline['BER']['baseline'] = ber_NN.numpy()
 
-# Save the results to a file (optional)
-with open("bler_results_baseline.pkl", 'wb') as f:
-    pickle.dump(results_baseline, f)
+# # Save the results to a file (optional)
+# with open("bler_results_baseline.pkl", 'wb') as f:
+#     pickle.dump(results_baseline, f)
 
 
 # Save the x_rrcf signals to a file (as NumPy or TF tensors)
-signal_file = "x_rrcf_signals_no_clipping.pkl"
+signal_file = "x_rrcf_signals_baseline_no_imp.pkl"
 with open(signal_file, "wb") as f:
     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_numpy, f)
@@ -423,13 +423,13 @@ with open(signal_file, "wb") as f:
 #     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
 #     pickle.dump(x_rrcf_Rapp_numpy, f)
 
-signal_mapperFile = "x_mapper.pkl"
-with open(signal_mapperFile, "wb") as f:
-    x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
-    pickle.dump(x_mapper, f)
+# signal_mapperFile = "x_mapper.pkl"
+# with open(signal_mapperFile, "wb") as f:
+#     x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
+#     pickle.dump(x_mapper, f)
 
 
-signal_demapperFile = "y_demapper.pkl"
-with open(signal_demapperFile, "wb") as f:
-    y_demapper = {ebno_db: x.numpy() for ebno_db, x in bits_before_demapper.items()}  # Convert to NumPy for storage
-    pickle.dump(y_demapper, f)
+# signal_demapperFile = "y_demapper.pkl"
+# with open(signal_demapperFile, "wb") as f:
+#     y_demapper = {ebno_db: x.numpy() for ebno_db, x in bits_before_demapper.items()}  # Convert to NumPy for storage
+#     pickle.dump(y_demapper, f)

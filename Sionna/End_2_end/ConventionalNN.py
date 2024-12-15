@@ -198,8 +198,8 @@ class End2EndSystem(Model): # Inherits from Keras Model
             # Non linear noise - Rapp model 
             ########################################
             self.RappModel = RappPowerAmplifier(
-                saturation_amplitude = 0.9,
-                smoothness_factor = 1.93
+                saturation_amplitude = 1,
+                smoothness_factor = 3
             )
             self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
             self.decoder = LDPC5GDecoder(
@@ -260,11 +260,11 @@ class End2EndSystem(Model): # Inherits from Keras Model
         x_rrcf = self.rrcf(x_us)#, padding = "same")
 
           ############################
-        # if not self.training:  # Apply Rapp model only in inference mode
-        #    # Rapp noise addition 
-        #     ############################
-        #     x_rrcf = self.RappModel(x_rrcf)
-        #     ############################
+        if not self.training:  # Apply Rapp model only in inference mode
+           # Rapp noise addition 
+            ############################
+            x_rrcf = self.RappModel(x_rrcf)
+            ############################
         #Channel:
         ############################
         y = self.awgn_channel([x_rrcf, no]) #passed symbols to the channel together with noise variance 
@@ -403,15 +403,15 @@ load_weights(model, model_weights_path)
 # SNR
 ###################################################
 
-ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
-    #soft estimates added for demapping 
-results['BLER']['autoencoder-NN'] = bler_NN.numpy()
-results['BER']['autoencoder-NN'] = ber_NN.numpy()
+# ber_NN, bler_NN = sim_ber(
+#     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+#     #soft estimates added for demapping 
+# results['BLER']['autoencoder-NN'] = bler_NN.numpy()
+# results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
-# Save the results to a file (optional)
-with open("bler_resultsNN_conv_no_imp.pkl", 'wb') as f:
-    pickle.dump((results), f)
+# # Save the results to a file (optional)
+# with open("bler_resultsNN_conv_no_imp.pkl", 'wb') as f:
+#     pickle.dump((results), f)
 
 
 ##############################################
@@ -431,7 +431,7 @@ print("All selected Eb/N0 evaluations completed.")
 
 
 # Save the x_rrcf signals to a file (as NumPy or TF tensors)
-signal_file = "x_rrcf_signals_no_clippingNN_conv_no_imp.pkl"
+signal_file = "x_rrcf_signals_RAPP_p_3NN_conv.pkl"
 with open(signal_file, "wb") as f:
     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_numpy, f)
@@ -442,16 +442,16 @@ with open(signal_file, "wb") as f:
 #     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
 #     pickle.dump(x_rrcf_Rapp_numpy, f)
 
-signal_mapperFile = "x_mapperNN_conv_no_imp.pkl"
-with open(signal_mapperFile, "wb") as f:
-    x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
-    pickle.dump(x_mapper, f)
+# signal_mapperFile = "x_mapperNN_conv_no_imp.pkl"
+# with open(signal_mapperFile, "wb") as f:
+#     x_mapper = {ebno_db: x.numpy() for ebno_db, x in bits_after_mapper.items()}  # Convert to NumPy for storage
+#     pickle.dump(x_mapper, f)
 
 
-signal_demapperFile = "y_demapperNN_conv_no_imp.pkl"
-with open(signal_demapperFile, "wb") as f:
-    y_demapper = {ebno_db: x.numpy() for ebno_db, x in bits_before_demapper.items()}  # Convert to NumPy for storage
-    pickle.dump(y_demapper, f)
+# signal_demapperFile = "y_demapperNN_conv_no_imp.pkl"
+# with open(signal_demapperFile, "wb") as f:
+#     y_demapper = {ebno_db: x.numpy() for ebno_db, x in bits_before_demapper.items()}  # Convert to NumPy for storage
+#     pickle.dump(y_demapper, f)
 
 
 

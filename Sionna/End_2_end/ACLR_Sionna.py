@@ -17,12 +17,27 @@ samples_per_symbol = 4
 
 
 
-
+#NN model:
 # File to save the signals
-signal_file = "x_rrcf_signals_no_clippingNN_conv_no_imp.pkl"
+signal_file = "x_rrcf_signals_NN_conv_no_imp.pkl"
 #signal_file_noisy = "x_rrcf_Rapp.pkl"
-signal_file_noisy="x_rrcf_signals_no_clippingNN_conv.pkl"
+# p = 1
+signal_file_noisy1="x_rrcf_signals_RAPP_p_1NN_conv.pkl"
+#p = 2 
+signal_file_noisy2="x_rrcf_signals_RAPP_p_2NN_conv.pkl"
+#p = 3 
+signal_file_noisy3="x_rrcf_signals_RAPP_p_3NN_conv.pkl"
 
+#baseline model:
+# File to save the signals
+signal_file_baseline = "x_rrcf_signals_baseline_no_imp.pkl"
+#signal_file_noisy = "x_rrcf_Rapp.pkl"
+# p = 1
+signal_file_baseline_noisy1="x_rrcf_signals_RAPP_p_1_baseline.pkl"
+#p = 2 
+signal_file_baseline_noisy2="x_rrcf_signals_RAPP_p_2_baseline.pkl"
+#p = 3 
+signal_file_baseline_noisy3="x_rrcf_signals_RAPP_p_3_baseline.pkl"
 
 # Load signals from the file
 with open(signal_file, "rb") as f:
@@ -30,21 +45,24 @@ with open(signal_file, "rb") as f:
 
 
 # Load signals from the file
-with open(signal_file_noisy, "rb") as f:
+with open(signal_file_noisy1, "rb") as f:
     loaded_signals_noisy = pickle.load(f)
 
 # Initialize CCDFCalculator    
 # Check the loaded data
+#NN model 
 for ebno_db, x_rrcf_signal in loaded_signals.items():
     print(f"EB/N0 = {ebno_db} dB, Signal Shape: {x_rrcf_signal.shape}")
 batch_size, num_samples = loaded_signals[9].shape  # Assuming you want EB/N0 = 8.5 dB
 signal_batch = loaded_signals[9]  # Shape: (batch_size, num_samples)
-
+#p = 1 
 for ebno_db, x_rrcf_signal in loaded_signals_noisy.items():
     print(f"EB/N0 = {ebno_db} dB, Signal Shape (with Noise): {x_rrcf_signal.shape}")
 batch_size_RAPP, num_samples = loaded_signals_noisy[9].shape  # Assuming you want EB/N0 = 8.5 dB
 signal_batch_with_RAPP = loaded_signals_noisy[9]  # With RAPP
+#p = 2 
 
+#p = 3 
 
 
 
