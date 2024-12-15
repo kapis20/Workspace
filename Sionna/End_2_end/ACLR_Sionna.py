@@ -16,7 +16,9 @@ span_in_symbols = 32
 samples_per_symbol = 4
 
 
-
+##################################################
+# Signal files
+##################################################
 #NN model:
 # File to save the signals
 signal_file = "x_rrcf_signals_NN_conv_no_imp.pkl"
@@ -39,30 +41,57 @@ signal_file_baseline_noisy2="x_rrcf_signals_RAPP_p_2_baseline.pkl"
 #p = 3 
 signal_file_baseline_noisy3="x_rrcf_signals_RAPP_p_3_baseline.pkl"
 
+################################################
+# Loading signals 
+################################################
+#NN model 
+
 # Load signals from the file
 with open(signal_file, "rb") as f:
-    loaded_signals = pickle.load(f)
+    NNloaded_signals = pickle.load(f)
 
 
-# Load signals from the file
 with open(signal_file_noisy1, "rb") as f:
-    loaded_signals_noisy = pickle.load(f)
+    NNloaded_signals_noisy_p1 = pickle.load(f)
 
-# Initialize CCDFCalculator    
+with open(signal_file_noisy2, "rb") as f:
+    NNloaded_signals_noisy_p2 = pickle.load(f)
+
+
+with open(signal_file_noisy3, "rb") as f:
+    NNloaded_signals_noisy_p3 = pickle.load(f)
+
+
+#Baseline: 
+
+with open(signal_file_baseline, "rb") as f:
+    Baseline_loaded_signals = pickle.load(f)
+
+with open(signal_file_baseline_noisy1, "rb") as f:
+    Baseline_noisy_signals_p1 = pickle.load(f)
+
+with open(signal_file_baseline_noisy2, "rb") as f:
+    Baseline_noisy_signals_p2 = pickle.load(f)
+
+with open(signal_file_baseline_noisy3, "rb") as f:
+    Baseline_noisy_signals_p3 = pickle.load(f)
+###########################################  
 # Check the loaded data
-#NN model 
-for ebno_db, x_rrcf_signal in loaded_signals.items():
-    print(f"EB/N0 = {ebno_db} dB, Signal Shape: {x_rrcf_signal.shape}")
-batch_size, num_samples = loaded_signals[9].shape  # Assuming you want EB/N0 = 8.5 dB
-signal_batch = loaded_signals[9]  # Shape: (batch_size, num_samples)
-#p = 1 
-for ebno_db, x_rrcf_signal in loaded_signals_noisy.items():
-    print(f"EB/N0 = {ebno_db} dB, Signal Shape (with Noise): {x_rrcf_signal.shape}")
-batch_size_RAPP, num_samples = loaded_signals_noisy[9].shape  # Assuming you want EB/N0 = 8.5 dB
-signal_batch_with_RAPP = loaded_signals_noisy[9]  # With RAPP
-#p = 2 
+###########################################
 
-#p = 3 
+# #NN model 
+# for ebno_db, x_rrcf_signal in NNloaded_signals.items():
+#     print(f"EB/N0 = {ebno_db} dB, Signal Shape: {x_rrcf_signal.shape}")
+# #batch_size, num_samples = loaded_signals[9].shape  # Assuming you want EB/N0 = 8.5 dB
+# signal_batch = loaded_signals[9]  # Shape: (batch_size, num_samples)
+# #p = 1 
+# for ebno_db, x_rrcf_signal in loaded_signals_noisy.items():
+#     print(f"EB/N0 = {ebno_db} dB, Signal Shape (with Noise): {x_rrcf_signal.shape}")
+# batch_size_RAPP, num_samples = loaded_signals_noisy[9].shape  # Assuming you want EB/N0 = 8.5 dB
+# signal_batch_with_RAPP = loaded_signals_noisy[9]  # With RAPP
+# #p = 2 
+
+# #p = 3 
 
 
 
@@ -166,6 +195,139 @@ def empirical_psd(x, show=True, oversampling=1.0, ylim=(-30, 3)):
 
     return freqs, psd
 
+def find_3db_points(freqs, psd):
+    """
+    Find the -3 dB points in the PSD.
+    """
+    psd_max = np.max(psd)
+    threshold = psd_max / 2  # -3 dB corresponds to half of max power
+    indices = np.where(psd >= threshold)[0]  # Indices where PSD is above threshold
+    f_low, f_high = freqs[indices[0]], freqs[indices[-1]]
+    print("f_low is", f_low)
+    print("f high is", f_high)
+    return f_low, f_high
+
+def firstSlopeBW(freqs,psd, threshold_dB):
+    """
+    Find emperical for BW based on the first slope of the signal
+    """
+    #Convert threshold to dB
+    threshold = 10**(threshold_dB/10)
+    indices = np.where(psd >= threshold)[0]  # Indices where PSD is above threshold
+    f_low, f_high = freqs[indices[0]], freqs[indices[-1]]
+    print("f_low is", f_low)
+    print("f high is", f_high)
+    return f_low, f_high
+
+def compute_aclr_3dB(freqs, psd):
+    """
+    Compute the ACLR as the ratio of main channel power to adjacent channel power.
+    """
+
+    f_low, f_high = find_3db_points(freqs,psd)
+    # Power in the main channel
+    main_channel_mask = (freqs >= f_low) & (freqs <= f_high)
+    P_main = np.sum(psd[main_channel_mask])
+    
+    # Define adjacent channels with the same bandwidth as the main channel
+    bandwidth = f_high - f_low
+    print("bandwith is: ", bandwidth)
+
+    left_adjacent_mask = (freqs >= f_low - bandwidth) & (freqs < f_low)
+    print("left adcj mask is", f_low - bandwidth)
+    right_adjacent_mask = (freqs > f_high) & (freqs <= f_high + bandwidth)
+    
+    # Power in adjacent channels
+    P_adjacent = np.sum(psd[left_adjacent_mask]) + np.sum(psd[right_adjacent_mask])
+    
+    # ACLR computation
+    aclr = P_main / P_adjacent
+    return aclr
 
 
-empirical_psd(signal_batch_with_RAPP, show = True, oversampling = 4.0, ylim=(-100,3))
+def compute_aclr_first_slope(freqs, psd, threshold_dB):
+    """
+    Compute the ACLR as the ratio of main channel power to adjacent channel power.
+    """
+
+    f_low, f_high = firstSlopeBW(freqs,psd, threshold_dB)
+    # Power in the main channel
+    main_channel_mask = (freqs >= f_low) & (freqs <= f_high)
+    P_main = np.sum(psd[main_channel_mask])
+    
+    # Define adjacent channels with the same bandwidth as the main channel
+    bandwidth = f_high - f_low
+    print("bandwith 1st sloper is: ", bandwidth)
+
+    left_adjacent_mask = (freqs >= f_low - bandwidth) & (freqs < f_low)
+    print("left adcj mask is", f_low - bandwidth)
+    right_adjacent_mask = (freqs > f_high) & (freqs <= f_high + bandwidth)
+    
+    # Power in adjacent channels
+    P_adjacent = np.sum(psd[left_adjacent_mask]) + np.sum(psd[right_adjacent_mask])
+    
+    # ACLR computation
+    aclr = P_main / P_adjacent
+    return aclr
+
+def SionnaACLR(freqs,psd,f_low=-0.5, f_high=0.5):
+    main_channel_mask = (freqs >= f_low) & (freqs <= f_high)
+    P_main = np.sum(psd[main_channel_mask])
+    # Define adjacent channels with the same bandwidth as the main channel
+    bandwidth = f_high - f_low
+    print("bandwith Sionna is: ", bandwidth)
+    left_adjacent_mask = (freqs >= f_low - bandwidth) & (freqs < f_low)
+    print("left adcj mask is", f_low - bandwidth)
+    right_adjacent_mask = (freqs > f_high) & (freqs <= f_high + bandwidth)
+    # Power in adjacent channels
+    P_adjacent = np.sum(psd[left_adjacent_mask]) + np.sum(psd[right_adjacent_mask])
+    # ACLR computation
+    aclr = P_main / P_adjacent
+    return aclr
+
+ylim=(-110,3)
+#NN model 
+freqs_NN_no_imp, psd_NN_no_imp = empirical_psd(NNloaded_signals[9], show = False, oversampling = 4.0, ylim=ylim)
+
+freqs_NN_p_1, psd_NN_p_1 = empirical_psd(NNloaded_signals_noisy_p1[9], show = False, oversampling = 4.0, ylim=ylim)
+
+freqs_NN_p_2, psd_NN_p_2 = empirical_psd(NNloaded_signals_noisy_p2[9], show = False, oversampling = 4.0, ylim=ylim)
+
+freqs_NN_p_3, psd_NN_p_3 = empirical_psd(NNloaded_signals_noisy_p3[9], show = False, oversampling = 4.0, ylim=ylim)
+
+#Baseline 
+freqs_Baseline_no_imp, psd_Baseline_no_imp = empirical_psd(Baseline_loaded_signals[9], show = False, oversampling = 4.0, ylim=ylim)
+
+freqs_Baseline_p_1, psd_Baseline_p_1 = empirical_psd(Baseline_noisy_signals_p1[9], show = False, oversampling = 4.0, ylim=ylim)
+
+freqs_Baseline_p_2, psd_Baseline_p_2 = empirical_psd(Baseline_noisy_signals_p2[9], show = False, oversampling = 4.0, ylim=ylim)
+
+freqs_Baseline_p_3, psd_Baseline_p_3 = empirical_psd(Baseline_noisy_signals_p3[9], show = False, oversampling = 4.0, ylim=ylim)
+
+#find_3db_points(freqs_NN_no_imp,psd_NN_no_imp)
+print("ACLR 3dB is",compute_aclr_3dB(freqs_NN_no_imp,psd_NN_no_imp))
+print("ACLR first slope is",compute_aclr_first_slope(freqs_NN_no_imp,psd_NN_no_imp,-45))
+print("ACLR Sionna is",SionnaACLR(freqs_NN_no_imp,psd_NN_no_imp))
+
+# Plot the PSDs
+##NN:
+plt.figure(figsize=(10, 6))
+plt.plot(freqs_NN_no_imp, 10 * np.log10(psd_NN_no_imp), label="E2N - no impairment")
+plt.plot(freqs_NN_p_1, 10 * np.log10(psd_NN_p_1), label="E2N - p=1")
+plt.plot(freqs_NN_p_2, 10 * np.log10(psd_NN_p_2), label="E2E - p=2")
+plt.plot(freqs_NN_p_3, 10 * np.log10(psd_NN_p_3), label="E2E - p=3")
+#Baseline:
+plt.plot(freqs_Baseline_no_imp, 10 * np.log10(psd_Baseline_no_imp), label="BL - no impairment")
+plt.plot(freqs_Baseline_p_1, 10 * np.log10(psd_Baseline_p_1), label="BL - p=1")
+plt.plot(freqs_Baseline_p_2, 10 * np.log10(psd_Baseline_p_2), label="BL - p=2")
+plt.plot(freqs_Baseline_p_3, 10 * np.log10(psd_Baseline_p_3), label="BL - p=3")
+plt.title("Power Spectral Density with RAPP Impairments")
+plt.xlabel("Normalized Frequency")
+plt.xlim([freqs_NN_no_imp[0], freqs_NN_no_imp[-1]])
+plt.ylabel(r"$\mathbb{E}\left[|X(f)|^2\right]$ (dB)")
+plt.ylim(ylim)
+plt.grid(True, which="both")
+plt.legend()
+plt.show()
+
+
