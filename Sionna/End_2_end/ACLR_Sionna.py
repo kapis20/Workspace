@@ -203,8 +203,8 @@ def find_3db_points(freqs, psd):
     threshold = psd_max / 2  # -3 dB corresponds to half of max power
     indices = np.where(psd >= threshold)[0]  # Indices where PSD is above threshold
     f_low, f_high = freqs[indices[0]], freqs[indices[-1]]
-    print("f_low is", f_low)
-    print("f high is", f_high)
+    #print("f_low is", f_low)
+    #print("f high is", f_high)
     return f_low, f_high
 
 def firstSlopeBW(freqs,psd, threshold_dB):
@@ -215,8 +215,8 @@ def firstSlopeBW(freqs,psd, threshold_dB):
     threshold = 10**(threshold_dB/10)
     indices = np.where(psd >= threshold)[0]  # Indices where PSD is above threshold
     f_low, f_high = freqs[indices[0]], freqs[indices[-1]]
-    print("f_low is", f_low)
-    print("f high is", f_high)
+    #print("f_low is", f_low)
+    #print("f high is", f_high)
     return f_low, f_high
 
 def compute_aclr_3dB(freqs, psd):
@@ -231,18 +231,20 @@ def compute_aclr_3dB(freqs, psd):
     
     # Define adjacent channels with the same bandwidth as the main channel
     bandwidth = f_high - f_low
-    print("bandwith is: ", bandwidth)
+    #print("bandwith is: ", bandwidth)
 
     left_adjacent_mask = (freqs >= f_low - bandwidth) & (freqs < f_low)
-    print("left adcj mask is", f_low - bandwidth)
+    #print("left adcj mask is", f_low - bandwidth)
     right_adjacent_mask = (freqs > f_high) & (freqs <= f_high + bandwidth)
     
     # Power in adjacent channels
     P_adjacent = np.sum(psd[left_adjacent_mask]) + np.sum(psd[right_adjacent_mask])
     
     # ACLR computation
-    aclr = P_main / P_adjacent
-    return aclr
+    aclr = P_adjacent/P_main
+    aclr_db = 10*np.log10(aclr)
+
+    return aclr_db
 
 
 def compute_aclr_first_slope(freqs, psd, threshold_dB):
@@ -257,33 +259,50 @@ def compute_aclr_first_slope(freqs, psd, threshold_dB):
     
     # Define adjacent channels with the same bandwidth as the main channel
     bandwidth = f_high - f_low
-    print("bandwith 1st sloper is: ", bandwidth)
+    #print("bandwith 1st sloper is: ", bandwidth)
 
     left_adjacent_mask = (freqs >= f_low - bandwidth) & (freqs < f_low)
-    print("left adcj mask is", f_low - bandwidth)
+    #print("left adcj mask is", f_low - bandwidth)
     right_adjacent_mask = (freqs > f_high) & (freqs <= f_high + bandwidth)
     
     # Power in adjacent channels
     P_adjacent = np.sum(psd[left_adjacent_mask]) + np.sum(psd[right_adjacent_mask])
     
     # ACLR computation
-    aclr = P_main / P_adjacent
-    return aclr
+    aclr = P_adjacent/P_main
+    aclr_db = 10*np.log10(aclr)
+
+    return aclr_db
 
 def SionnaACLR(freqs,psd,f_low=-0.5, f_high=0.5):
     main_channel_mask = (freqs >= f_low) & (freqs <= f_high)
     P_main = np.sum(psd[main_channel_mask])
     # Define adjacent channels with the same bandwidth as the main channel
     bandwidth = f_high - f_low
-    print("bandwith Sionna is: ", bandwidth)
+    #print("bandwith Sionna is: ", bandwidth)
     left_adjacent_mask = (freqs >= f_low - bandwidth) & (freqs < f_low)
-    print("left adcj mask is", f_low - bandwidth)
+    #print("left adcj mask is", f_low - bandwidth)
     right_adjacent_mask = (freqs > f_high) & (freqs <= f_high + bandwidth)
     # Power in adjacent channels
     P_adjacent = np.sum(psd[left_adjacent_mask]) + np.sum(psd[right_adjacent_mask])
     # ACLR computation
-    aclr = P_main / P_adjacent
-    return aclr
+    aclr =  P_adjacent/P_main
+    aclr_db = 10*np.log10(aclr)
+    return aclr_db
+
+######################################################
+# Store values
+######################################################
+ACLR_3dB_BL =[]
+ACLR_3dB_NN =[]
+ACLR_Sionna_BL =[]
+ACLR_Sionna_NN = []
+ACLR_1st_slope_BL = []
+ACLR_1st_slope_NN = []
+
+# Smoothness factors (1 to 3 for [1-3], with [0] for no RAPP PA)
+smoothness_factors = [0, 1, 2, 3]
+
 
 ylim=(-110,3)
 #NN model 
@@ -304,10 +323,52 @@ freqs_Baseline_p_2, psd_Baseline_p_2 = empirical_psd(Baseline_noisy_signals_p2[9
 
 freqs_Baseline_p_3, psd_Baseline_p_3 = empirical_psd(Baseline_noisy_signals_p3[9], show = False, oversampling = 4.0, ylim=ylim)
 
-#find_3db_points(freqs_NN_no_imp,psd_NN_no_imp)
-print("ACLR 3dB is",compute_aclr_3dB(freqs_NN_no_imp,psd_NN_no_imp))
-print("ACLR first slope is",compute_aclr_first_slope(freqs_NN_no_imp,psd_NN_no_imp,-45))
-print("ACLR Sionna is",SionnaACLR(freqs_NN_no_imp,psd_NN_no_imp))
+# #find_3db_points(freqs_NN_no_imp,psd_NN_no_imp)
+# print("ACLR 3dB is",compute_aclr_3dB(freqs_NN_no_imp,psd_NN_no_imp))
+# print("ACLR first slope is",compute_aclr_first_slope(freqs_NN_no_imp,psd_NN_no_imp,-45))
+# print("ACLR Sionna is",SionnaACLR(freqs_NN_no_imp,psd_NN_no_imp))
+
+###################################################
+# Calculate ACLR 
+###################################################
+#1 3dB 
+#BL 
+# Dynamically append values
+ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_no_imp, psd_NN_no_imp))
+ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_1, psd_Baseline_p_1))
+ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_2, psd_Baseline_p_2))
+ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_3, psd_Baseline_p_3))
+#NN
+ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_no_imp, psd_Baseline_no_imp))
+ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_1, psd_NN_p_1))
+ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_2, psd_NN_p_2))
+ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_3, psd_NN_p_3))
+
+#2
+# Compute ACLR_Sionna_BL
+ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_no_imp, psd_Baseline_no_imp))
+ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_p_1, psd_Baseline_p_1))
+ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_p_2, psd_Baseline_p_2))
+ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_p_3, psd_Baseline_p_3))
+
+# Compute ACLR_Sionna_NN
+ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_no_imp, psd_NN_no_imp))
+ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_1, psd_NN_p_1))
+ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_2, psd_NN_p_2))
+ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_3, psd_NN_p_3))
+
+#3
+# Compute ACLR_1st_slope_BL
+ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_no_imp, psd_Baseline_no_imp,-45))
+ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_p_1, psd_Baseline_p_1,-45))
+ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_p_2, psd_Baseline_p_2,-45))
+ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_p_3, psd_Baseline_p_3,-45))
+
+# Compute ACLR_1st_slope_NN
+ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_no_imp, psd_NN_no_imp,-45))
+ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_1, psd_NN_p_1,-45))
+ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_2, psd_NN_p_2,-45))
+ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_3, psd_NN_p_3,-45))
 
 # Plot the PSDs
 ##NN:
@@ -328,6 +389,39 @@ plt.ylabel(r"$\mathbb{E}\left[|X(f)|^2\right]$ (dB)")
 plt.ylim(ylim)
 plt.grid(True, which="both")
 plt.legend()
+plt.savefig("PSD_new.png")
 plt.show()
 
 
+# Plot 1: ACLR_3dB_BL and ACLR_3dB_NN
+plt.figure(figsize=(8, 6))
+plt.plot(smoothness_factors, ACLR_3dB_BL, marker='o', label="ACLR 3dB Baseline")
+plt.plot(smoothness_factors, ACLR_3dB_NN, marker='o', label="ACLR 3dB NN")
+plt.title("ACLR 3dB vs Smoothness Factor")
+plt.xlabel("Smoothness Factor (p)")
+plt.ylabel("ACLR (dB)")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Plot 2: ACLR_Sionna_BL and ACLR_Sionna_NN
+plt.figure(figsize=(8, 6))
+plt.plot(smoothness_factors, ACLR_Sionna_BL, marker='o', label="ACLR Sionna Baseline")
+plt.plot(smoothness_factors, ACLR_Sionna_NN, marker='o', label="ACLR Sionna NN")
+plt.title("ACLR Sionna vs Smoothness Factor")
+plt.xlabel("Smoothness Factor (p)")
+plt.ylabel("ACLR (dB)")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Plot 3: ACLR_1st_slope_BL and ACLR_1st_slope_NN
+plt.figure(figsize=(8, 6))
+plt.plot(smoothness_factors, ACLR_1st_slope_BL, marker='o', label="ACLR 1st Slope Baseline")
+plt.plot(smoothness_factors, ACLR_1st_slope_NN, marker='o', label="ACLR 1st Slope NN")
+plt.title("ACLR 1st Slope vs Smoothness Factor")
+plt.xlabel("Smoothness Factor (p)")
+plt.ylabel("ACLR (dB)")
+plt.legend()
+plt.grid(True)
+plt.show()
