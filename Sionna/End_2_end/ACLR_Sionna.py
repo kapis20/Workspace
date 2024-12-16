@@ -331,97 +331,172 @@ freqs_Baseline_p_3, psd_Baseline_p_3 = empirical_psd(Baseline_noisy_signals_p3[9
 ###################################################
 # Calculate ACLR 
 ###################################################
+
+import pandas as pd
+
+# Replace these with your computed values
+ACLR_3dB_BL = [
+    compute_aclr_3dB(freqs_Baseline_no_imp, psd_NN_no_imp),
+    compute_aclr_3dB(freqs_Baseline_p_1, psd_Baseline_p_1),
+    compute_aclr_3dB(freqs_Baseline_p_2, psd_Baseline_p_2),
+    compute_aclr_3dB(freqs_Baseline_p_3, psd_Baseline_p_3),
+]
+ACLR_3dB_NN = [
+    compute_aclr_3dB(freqs_NN_no_imp, psd_Baseline_no_imp),
+    compute_aclr_3dB(freqs_NN_p_1, psd_NN_p_1),
+    compute_aclr_3dB(freqs_NN_p_2, psd_NN_p_2),
+    compute_aclr_3dB(freqs_NN_p_3, psd_NN_p_3),
+]
+ACLR_Sionna_BL = [
+    SionnaACLR(freqs_Baseline_no_imp, psd_Baseline_no_imp),
+    SionnaACLR(freqs_Baseline_p_1, psd_Baseline_p_1),
+    SionnaACLR(freqs_Baseline_p_2, psd_Baseline_p_2),
+    SionnaACLR(freqs_Baseline_p_3, psd_Baseline_p_3),
+]
+ACLR_Sionna_NN = [
+    SionnaACLR(freqs_NN_no_imp, psd_NN_no_imp),
+    SionnaACLR(freqs_NN_p_1, psd_NN_p_1),
+    SionnaACLR(freqs_NN_p_2, psd_NN_p_2),
+    SionnaACLR(freqs_NN_p_3, psd_NN_p_3),
+]
+ACLR_1st_slope_BL = [
+    compute_aclr_first_slope(freqs_Baseline_no_imp, psd_Baseline_no_imp, -45),
+    compute_aclr_first_slope(freqs_Baseline_p_1, psd_Baseline_p_1, -45),
+    compute_aclr_first_slope(freqs_Baseline_p_2, psd_Baseline_p_2, -45),
+    compute_aclr_first_slope(freqs_Baseline_p_3, psd_Baseline_p_3, -45),
+]
+ACLR_1st_slope_NN = [
+    compute_aclr_first_slope(freqs_NN_no_imp, psd_NN_no_imp, -45),
+    compute_aclr_first_slope(freqs_NN_p_1, psd_NN_p_1, -45),
+    compute_aclr_first_slope(freqs_NN_p_2, psd_NN_p_2, -45),
+    compute_aclr_first_slope(freqs_NN_p_3, psd_NN_p_3, -45),
+]
+
+# Combine values into a table
+data = {
+    "System": [
+        "BL (no RAPP)", "BL (p=1)", "BL (p=2)", "BL (p=3)",
+        "E2E (no RAPP)", "E2E (p=1)", "E2E (p=2)", "E2E (p=3)"
+    ],
+    "3dB Method": ACLR_3dB_BL + ACLR_3dB_NN,
+    "Sionna Method": ACLR_Sionna_BL + ACLR_Sionna_NN,
+    "1st Slope Method": ACLR_1st_slope_BL + ACLR_1st_slope_NN,
+}
+
+# Create a DataFrame
+table_df = pd.DataFrame(data)
+
+# Display the table
+print(table_df)
+
+# Save the table to a CSV file (optional)
+table_df.to_csv("ACLR_Comparison_Table.csv", index=False)
+# Save the table as a LaTeX file
+table_df.to_latex("ACLR_Comparison_Table.tex", index=False, caption="ACLR Comparison Table", label="tab:aclr_table")
+
+
+
+
+
+
+
+
+
+
+
+
+
 #1 3dB 
 #BL 
-# Dynamically append values
-ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_no_imp, psd_NN_no_imp))
-ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_1, psd_Baseline_p_1))
-ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_2, psd_Baseline_p_2))
-ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_3, psd_Baseline_p_3))
-#NN
-ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_no_imp, psd_Baseline_no_imp))
-ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_1, psd_NN_p_1))
-ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_2, psd_NN_p_2))
-ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_3, psd_NN_p_3))
+# # Dynamically append values
+# ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_no_imp, psd_NN_no_imp))
+# ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_1, psd_Baseline_p_1))
+# ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_2, psd_Baseline_p_2))
+# ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_3, psd_Baseline_p_3))
+# #NN
+# ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_no_imp, psd_Baseline_no_imp))
+# ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_1, psd_NN_p_1))
+# ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_2, psd_NN_p_2))
+# ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_3, psd_NN_p_3))
 
-#2
-# Compute ACLR_Sionna_BL
-ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_no_imp, psd_Baseline_no_imp))
-ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_p_1, psd_Baseline_p_1))
-ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_p_2, psd_Baseline_p_2))
-ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_p_3, psd_Baseline_p_3))
+# #2
+# # Compute ACLR_Sionna_BL
+# ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_no_imp, psd_Baseline_no_imp))
+# ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_p_1, psd_Baseline_p_1))
+# ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_p_2, psd_Baseline_p_2))
+# ACLR_Sionna_BL.append(SionnaACLR(freqs_Baseline_p_3, psd_Baseline_p_3))
 
-# Compute ACLR_Sionna_NN
-ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_no_imp, psd_NN_no_imp))
-ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_1, psd_NN_p_1))
-ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_2, psd_NN_p_2))
-ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_3, psd_NN_p_3))
+# # Compute ACLR_Sionna_NN
+# ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_no_imp, psd_NN_no_imp))
+# ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_1, psd_NN_p_1))
+# ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_2, psd_NN_p_2))
+# ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_3, psd_NN_p_3))
 
-#3
-# Compute ACLR_1st_slope_BL
-ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_no_imp, psd_Baseline_no_imp,-45))
-ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_p_1, psd_Baseline_p_1,-45))
-ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_p_2, psd_Baseline_p_2,-45))
-ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_p_3, psd_Baseline_p_3,-45))
+# #3
+# # Compute ACLR_1st_slope_BL
+# ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_no_imp, psd_Baseline_no_imp,-45))
+# ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_p_1, psd_Baseline_p_1,-45))
+# ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_p_2, psd_Baseline_p_2,-45))
+# ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_p_3, psd_Baseline_p_3,-45))
 
-# Compute ACLR_1st_slope_NN
-ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_no_imp, psd_NN_no_imp,-45))
-ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_1, psd_NN_p_1,-45))
-ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_2, psd_NN_p_2,-45))
-ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_3, psd_NN_p_3,-45))
+# # Compute ACLR_1st_slope_NN
+# ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_no_imp, psd_NN_no_imp,-45))
+# ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_1, psd_NN_p_1,-45))
+# ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_2, psd_NN_p_2,-45))
+# ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_3, psd_NN_p_3,-45))
 
-# Plot the PSDs
-##NN:
-plt.figure(figsize=(10, 6))
-plt.plot(freqs_NN_no_imp, 10 * np.log10(psd_NN_no_imp), label="E2N - no impairment")
-plt.plot(freqs_NN_p_1, 10 * np.log10(psd_NN_p_1), label="E2N - p=1")
-plt.plot(freqs_NN_p_2, 10 * np.log10(psd_NN_p_2), label="E2E - p=2")
-plt.plot(freqs_NN_p_3, 10 * np.log10(psd_NN_p_3), label="E2E - p=3")
-#Baseline:
-plt.plot(freqs_Baseline_no_imp, 10 * np.log10(psd_Baseline_no_imp), label="BL - no impairment")
-plt.plot(freqs_Baseline_p_1, 10 * np.log10(psd_Baseline_p_1), label="BL - p=1")
-plt.plot(freqs_Baseline_p_2, 10 * np.log10(psd_Baseline_p_2), label="BL - p=2")
-plt.plot(freqs_Baseline_p_3, 10 * np.log10(psd_Baseline_p_3), label="BL - p=3")
-plt.title("Power Spectral Density with RAPP Impairments")
-plt.xlabel("Normalized Frequency")
-plt.xlim([freqs_NN_no_imp[0], freqs_NN_no_imp[-1]])
-plt.ylabel(r"$\mathbb{E}\left[|X(f)|^2\right]$ (dB)")
-plt.ylim(ylim)
-plt.grid(True, which="both")
-plt.legend()
-plt.savefig("PSD_new.png")
-plt.show()
+# # Plot the PSDs
+# ##NN:
+# plt.figure(figsize=(10, 6))
+# #plt.plot(freqs_NN_no_imp, 10 * np.log10(psd_NN_no_imp), label="E2N - no impairment")
+# plt.plot(freqs_NN_p_1, 10 * np.log10(psd_NN_p_1), label="E2N - p=1")
+# # plt.plot(freqs_NN_p_2, 10 * np.log10(psd_NN_p_2), label="E2E - p=2")
+# plt.plot(freqs_NN_p_3, 10 * np.log10(psd_NN_p_3), label="E2E - p=3")
+# #Baseline:
+# #lt.plot(freqs_Baseline_no_imp, 10 * np.log10(psd_Baseline_no_imp), label="BL - no impairment")
+# plt.plot(freqs_Baseline_p_1, 10 * np.log10(psd_Baseline_p_1), label="BL - p=1")
+# # plt.plot(freqs_Baseline_p_2, 10 * np.log10(psd_Baseline_p_2), label="BL - p=2")
+# plt.plot(freqs_Baseline_p_3, 10 * np.log10(psd_Baseline_p_3), label="BL - p=3")
+# plt.title("Power Spectral Density with RAPP Impairments")
+# plt.xlabel("Normalized Frequency")
+# plt.xlim([freqs_NN_no_imp[0], freqs_NN_no_imp[-1]])
+# plt.ylabel(r"$\mathbb{E}\left[|X(f)|^2\right]$ (dB)")
+# plt.ylim(ylim)
+# plt.grid(True, which="both")
+# plt.legend()
+# plt.savefig("PSD_new_P1P3.png")
+# plt.show()
 
 
-# Plot 1: ACLR_3dB_BL and ACLR_3dB_NN
-plt.figure(figsize=(8, 6))
-plt.plot(smoothness_factors, ACLR_3dB_BL, marker='o', label="ACLR 3dB Baseline")
-plt.plot(smoothness_factors, ACLR_3dB_NN, marker='o', label="ACLR 3dB NN")
-plt.title("ACLR 3dB vs Smoothness Factor")
-plt.xlabel("Smoothness Factor (p)")
-plt.ylabel("ACLR (dB)")
-plt.legend()
-plt.grid(True)
-plt.show()
+# # Plot 1: ACLR_3dB_BL and ACLR_3dB_NN
+# plt.figure(figsize=(8, 6))
+# plt.plot(smoothness_factors, ACLR_3dB_BL, marker='o', label="ACLR 3dB Baseline")
+# plt.plot(smoothness_factors, ACLR_3dB_NN, marker='o', label="ACLR 3dB NN")
+# plt.title("ACLR 3dB vs Smoothness Factor")
+# plt.xlabel("Smoothness Factor (p)")
+# plt.ylabel("ACLR (dB)")
+# plt.legend()
+# plt.grid(True)
+# plt.show()
 
-# Plot 2: ACLR_Sionna_BL and ACLR_Sionna_NN
-plt.figure(figsize=(8, 6))
-plt.plot(smoothness_factors, ACLR_Sionna_BL, marker='o', label="ACLR Sionna Baseline")
-plt.plot(smoothness_factors, ACLR_Sionna_NN, marker='o', label="ACLR Sionna NN")
-plt.title("ACLR Sionna vs Smoothness Factor")
-plt.xlabel("Smoothness Factor (p)")
-plt.ylabel("ACLR (dB)")
-plt.legend()
-plt.grid(True)
-plt.show()
+# # Plot 2: ACLR_Sionna_BL and ACLR_Sionna_NN
+# plt.figure(figsize=(8, 6))
+# plt.plot(smoothness_factors, ACLR_Sionna_BL, marker='o', label="ACLR Sionna Baseline")
+# plt.plot(smoothness_factors, ACLR_Sionna_NN, marker='o', label="ACLR Sionna NN")
+# plt.title("ACLR Sionna vs Smoothness Factor")
+# plt.xlabel("Smoothness Factor (p)")
+# plt.ylabel("ACLR (dB)")
+# plt.legend()
+# plt.grid(True)
+# plt.show()
 
-# Plot 3: ACLR_1st_slope_BL and ACLR_1st_slope_NN
-plt.figure(figsize=(8, 6))
-plt.plot(smoothness_factors, ACLR_1st_slope_BL, marker='o', label="ACLR 1st Slope Baseline")
-plt.plot(smoothness_factors, ACLR_1st_slope_NN, marker='o', label="ACLR 1st Slope NN")
-plt.title("ACLR 1st Slope vs Smoothness Factor")
-plt.xlabel("Smoothness Factor (p)")
-plt.ylabel("ACLR (dB)")
-plt.legend()
-plt.grid(True)
-plt.show()
+# # Plot 3: ACLR_1st_slope_BL and ACLR_1st_slope_NN
+# plt.figure(figsize=(8, 6))
+# plt.plot(smoothness_factors, ACLR_1st_slope_BL, marker='o', label="ACLR 1st Slope Baseline")
+# plt.plot(smoothness_factors, ACLR_1st_slope_NN, marker='o', label="ACLR 1st Slope NN")
+# plt.title("ACLR 1st Slope vs Smoothness Factor")
+# plt.xlabel("Smoothness Factor (p)")
+# plt.ylabel("ACLR (dB)")
+# plt.legend()
+# plt.grid(True)
+# plt.show()
