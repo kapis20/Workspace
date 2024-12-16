@@ -217,18 +217,7 @@ for signals, label in zip(signal_sets, signal_labels):
     plt.plot(thresholds_db, ccdf.numpy(), label=label)
 
 
-# # Customize the plot
-# plt.xlabel("Normalized Power (dB)", fontsize=12)
-# plt.ylabel("CCDF (Probability)", fontsize=12)
-# plt.title("CCDF of Normalized Power ", fontsize=14)
-# plt.yscale("log")  # Logarithmic scale for the CCDF
-# plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-# plt.legend()
-# plt.tight_layout()
-# plt.savefig("CCDF_Plot",dpi =300)
-# plt.xlim(1,8)
-# plt.ylim(10e-6)
-# plt.show()
+
 
 
 # Customize the plot

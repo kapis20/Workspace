@@ -76,8 +76,9 @@ def compute_cdf(signal):
         x (numpy array): Sorted signal values.
         cdf (numpy array): CDF corresponding to the sorted values.
     """
-    # Flatten and sort the signal
+    # Flatten and sort the signal, convert from 2D to 1D
     flattened_signal = signal.flatten()
+    # sort in the ascending ordr 
     x = np.sort(flattened_signal)
     
     # Compute the CDF
@@ -85,10 +86,7 @@ def compute_cdf(signal):
     return x, cdf
 
 
-signal_labels = [
-    "E2E no impairment", "E2E p=1", "E2E p=2", "E2E p=3",
-    "BL no impairment", "BL p=1", "BL p=2", "BL p=3"
-]
+
 
 signals = {
     "E2E no impairment":NNloaded_signals[9],
@@ -106,12 +104,21 @@ plt.figure(figsize=(10, 6))
 
 for label, signal in signals.items():
     # Compute the magnitude of the signal (complex number)
-    magnitude_signal = np.abs(signal)
-    x, cdf = compute_cdf(magnitude_signal)
+    #magnitude_signal = np.abs(signal)
+    # Compute the instantaneous power (|signal|^2)
+    instantaneous_power = np.abs(signal)**2
+     # Compute the average power
+    average_power = np.mean(instantaneous_power)
+    # Normalize instantaneous power by average power
+    normalized_power = instantaneous_power / average_power
+
+    x, cdf = compute_cdf(normalized_power)
     plt.plot(x, cdf, label=label)
 
+
 # Add labels and title
-plt.xlabel("Signal Values")
+
+plt.xlabel("Instantaneous Power / Average Power")
 plt.ylabel("CDF")
 plt.title("CDFs for Multiple Signals")
 plt.grid()

@@ -354,10 +354,10 @@ plot_ber_bler("bler_resultsNN_conv_no_imp.pkl","bler_results_baseline_correct_1.
 # #plot_ber_bler_NN("bler_results.pkl")
 
 # Plot the constellation before training
-plot_constellation("constellation_dataNN.pkl", stage="constellation_before", num_bits_per_symbol=6)
+plot_constellation("constellation_dataNN_RAPP_included.pkl", stage="constellation_before", num_bits_per_symbol=6)
 
 # Plot the constellation after training
-plot_constellation("constellation_dataNN.pkl", stage="constellation_after", num_bits_per_symbol=6)
+plot_constellation("constellation_dataNN_RAPP_included.pkl", stage="constellation_after", num_bits_per_symbol=6)
 
 # # Plot baseline constellation
 # #plot_constellation_baseline("constellation_baseline.pkl")
