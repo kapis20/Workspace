@@ -217,7 +217,7 @@ class Baseline(Model): # Inherits from Keras Model
         ########################################
         self.RappModel = RappPowerAmplifier(
             saturation_amplitude = 1,
-            smoothness_factor = 2
+            smoothness_factor = 3
         )
 
     
@@ -407,7 +407,7 @@ results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
 
 # Save the results to a file (optional)
-with open("bler_results_baseline_P=2.pkl", 'wb') as f:
+with open("bler_results_baseline_P=3.pkl", 'wb') as f:
     pickle.dump(results_baseline, f)
 
 
