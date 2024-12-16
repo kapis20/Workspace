@@ -77,7 +77,7 @@ samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling fa
 BATCH_SIZE = tf.constant(128, tf.int32) # Training batch size#10 #how many examples are processed by sionna in parallel 
 lenght_of_block = int(num_symbols_per_codeword)
 #Name to store weights 
-model_weights_path = "weights-neural-demapper-Conventional"
+model_weights_path = "weights-neural-demapper-Conventional_RAPP"
 ##############################################
 #Evaluation metrics 
 ##############################################
@@ -182,7 +182,15 @@ class End2EndSystem(Model): # Inherits from Keras Model
         self.demapper = NeuralDemapper() # Intantiate the NeuralDemapper custom layer as any other  
         #self.bce = tf.keras.losses.BinaryCrossentropy(from_logits=True) # Loss function
 
+        # Non linear noise - Rapp model 
+        ########################################
+        self.RappModel = RappPowerAmplifier(
+            saturation_amplitude = 1,
+            smoothness_factor = 1
+        )
         self.training = training
+
+
 
         ## conditional encoder and decoder, use only when in not training mode- other components to be added here later 
         if not self.training:
@@ -195,12 +203,12 @@ class End2EndSystem(Model): # Inherits from Keras Model
             self.encoder = LDPC5GEncoder(k,n, num_bits_per_symbol) #pass no of info bits and lenght of the codeword, and bits per symbol
             
              ########################################
-            # Non linear noise - Rapp model 
-            ########################################
-            self.RappModel = RappPowerAmplifier(
-                saturation_amplitude = 1,
-                smoothness_factor = 3
-            )
+            # # Non linear noise - Rapp model 
+            # ########################################
+            # self.RappModel = RappPowerAmplifier(
+            #     saturation_amplitude = 1,
+            #     smoothness_factor = 1
+            # )
             self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
             self.decoder = LDPC5GDecoder(
                 encoder=self.encoder,       # Pass encoder instance
@@ -260,11 +268,11 @@ class End2EndSystem(Model): # Inherits from Keras Model
         x_rrcf = self.rrcf(x_us)#, padding = "same")
 
           ############################
-        if not self.training:  # Apply Rapp model only in inference mode
+        #if not self.training:  # Apply Rapp model only in inference mode
            # Rapp noise addition 
-            ############################
-            x_rrcf = self.RappModel(x_rrcf)
-            ############################
+        ############################
+        x_rrcf = self.RappModel(x_rrcf)
+        ############################
         #Channel:
         ############################
         y = self.awgn_channel([x_rrcf, no]) #passed symbols to the channel together with noise variance 
@@ -353,30 +361,30 @@ def save_weights(model_train, model_weights_path):
 #####################################
 # Run training 
 #####################################
-# # Instantiating the end-to-end model for training
-# model_train = End2EndSystem(training=True)
-# # Extract and save constellation data before training
-# constellation_data['constellation_before']= model_train.constellation.points.numpy()
-# # Track time for model training
-# training_start_time = time.time()
-# conventional_training(model_train)
-# # Save weights
-# save_weights(model_train, model_weights_path)
-# # Extract and save constellation data after training
-# constellation_data['constellation_after'] = model_train.constellation.points.numpy()
-# # End time for training
-# training_end_time = time.time()
+# Instantiating the end-to-end model for training
+model_train = End2EndSystem(training=True)
+# Extract and save constellation data before training
+constellation_data['constellation_before']= model_train.constellation.points.numpy()
+# Track time for model training
+training_start_time = time.time()
+conventional_training(model_train)
+# Save weights
+save_weights(model_train, model_weights_path)
+# Extract and save constellation data after training
+constellation_data['constellation_after'] = model_train.constellation.points.numpy()
+# End time for training
+training_end_time = time.time()
 
 
 
-# # Save constellation data to a .pkl file
-# with open("constellation_dataNN.pkl", "wb") as f:
-#     pickle.dump(constellation_data, f)
+# Save constellation data to a .pkl file
+with open("constellation_dataNN_RAPP_included.pkl", "wb") as f:
+    pickle.dump(constellation_data, f)
 
 
-# # Save loss function values to a file
-# with open("loss_valuesConv.pkl","wb") as f:
-#     pickle.dump(loss_values,f)
+# Save loss function values to a file
+with open("loss_valuesConv_RAPP.pkl","wb") as f:
+    pickle.dump(loss_values,f)
 ##################################################
 #model evaluation 
 ##################################################
@@ -403,38 +411,38 @@ load_weights(model, model_weights_path)
 # SNR
 ###################################################
 
-# ber_NN, bler_NN = sim_ber(
-#     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
-#     #soft estimates added for demapping 
-# results['BLER']['autoencoder-NN'] = bler_NN.numpy()
-# results['BER']['autoencoder-NN'] = ber_NN.numpy()
+ber_NN, bler_NN = sim_ber(
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=2000,soft_estimates=True) #was used 1000 and 10000
+    #soft estimates added for demapping 
+results['BLER']['autoencoder-NN'] = bler_NN.numpy()
+results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
-# # Save the results to a file (optional)
-# with open("bler_resultsNN_conv_no_imp.pkl", 'wb') as f:
-#     pickle.dump((results), f)
+# Save the results to a file (optional)
+with open("bler_resultsNN_conv_RAPP.pkl", 'wb') as f:
+    pickle.dump((results), f)
 
 
 ##############################################
 # Signals from the model
 # ########################################### 
 
-selected_ebno_dbs = 9.0  # Adjust as needed
-selected_ebno_dbs = tf.constant(selected_ebno_dbs, dtype=tf.float32)  # Convert to TensorFlow tensor
-print(f"Starting evaluation for Eb/N0 = {selected_ebno_dbs} dB...")  # Print current Eb/N0
-uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, selected_ebno_dbs)
-selected_ebno_dbs_value = selected_ebno_dbs.numpy()  # Convert tensor to a Python float
-x_rrcf_signals[selected_ebno_dbs_value] = x_rrcf
-bits_after_mapper[selected_ebno_dbs_value] = x
-bits_before_demapper[selected_ebno_dbs_value] = y_ds
-print("All selected Eb/N0 evaluations completed.")
+# selected_ebno_dbs = 9.0  # Adjust as needed
+# selected_ebno_dbs = tf.constant(selected_ebno_dbs, dtype=tf.float32)  # Convert to TensorFlow tensor
+# print(f"Starting evaluation for Eb/N0 = {selected_ebno_dbs} dB...")  # Print current Eb/N0
+# uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, selected_ebno_dbs)
+# selected_ebno_dbs_value = selected_ebno_dbs.numpy()  # Convert tensor to a Python float
+# x_rrcf_signals[selected_ebno_dbs_value] = x_rrcf
+# bits_after_mapper[selected_ebno_dbs_value] = x
+# bits_before_demapper[selected_ebno_dbs_value] = y_ds
+# print("All selected Eb/N0 evaluations completed.")
 
 
 
-# Save the x_rrcf signals to a file (as NumPy or TF tensors)
-signal_file = "x_rrcf_signals_RAPP_p_3NN_conv.pkl"
-with open(signal_file, "wb") as f:
-    x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
-    pickle.dump(x_rrcf_numpy, f)
+# # Save the x_rrcf signals to a file (as NumPy or TF tensors)
+# signal_file = "x_rrcf_signals_RAPP_p_3NN_conv.pkl"
+# with open(signal_file, "wb") as f:
+#     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
+#     pickle.dump(x_rrcf_numpy, f)
 
 
 # signal_Rappfile = "x_rrcf_RappNN.pkl"
@@ -455,11 +463,11 @@ with open(signal_file, "wb") as f:
 
 
 
-# # Time calculations: 
-# # Calculate and print total execution time
-# end_time = time.time()
-# total_execution_time = end_time - start_time
-# training_execution_time = training_end_time - training_start_time
+# Time calculations: 
+# Calculate and print total execution time
+end_time = time.time()
+total_execution_time = end_time - start_time
+training_execution_time = training_end_time - training_start_time
 
-# print(f"\nTotal Execution Time: {total_execution_time:.2f} seconds")
-# print(f"Training Execution Time: {training_execution_time:.2f} seconds")
+print(f"\nTotal Execution Time: {total_execution_time:.2f} seconds")
+print(f"Training Execution Time: {training_execution_time:.2f} seconds")
