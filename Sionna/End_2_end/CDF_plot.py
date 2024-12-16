@@ -89,13 +89,13 @@ def compute_cdf(signal):
 
 
 signals = {
-    "E2E no impairment":NNloaded_signals[9],
-    "NN, p=1": NNloaded_signals_noisy_p1[9],
-    "NN, p=2": NNloaded_signals_noisy_p2[9],
-    "NN, p=3": NNloaded_signals_noisy_p3[9],
-    "BL no impairement": Baseline_loaded_signals[9],
+    #"E2E no impairment":NNloaded_signals[9],
+    "E2E, p=1": NNloaded_signals_noisy_p1[9],
+    #"E2E, p=2": NNloaded_signals_noisy_p2[9],
+    "E2E, p=3": NNloaded_signals_noisy_p3[9],
+    #"BL no impairement": Baseline_loaded_signals[9],
     "BL, p=1": Baseline_noisy_signals_p1[9],
-    "BL, p=2": Baseline_noisy_signals_p2[9],
+    #"BL, p=2": Baseline_noisy_signals_p2[9],
     "BL, p=3": Baseline_noisy_signals_p3[9]
 
 }
