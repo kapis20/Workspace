@@ -11,66 +11,104 @@ loss_file_path = "loss_values.pkl"
 ##############################################
 #PLot BER and BLER function
 ##############################################
-def plot_ber_bler(results_filename,baseline_filename,NNimpaired, baselineImpaired):
+def plot_ber_bler(BL_noRapp,BL_P1,BL_P2, BL_P3,E2E_noRapp, E2E_P1, E2E_P2, E2E_P3):
 # Load the data from the file
 
-    with open(results_filename, 'rb') as f:
-        results = pickle.load(f)
+    with open(BL_noRapp, 'rb') as f:
+        BL_noRapp = pickle.load(f)
 
-    with open(baseline_filename, 'rb') as f:
-        baseline_results = pickle.load(f)
+    with open(BL_P1, 'rb') as f:
+        BL_P1 = pickle.load(f)
 
-    with open(NNimpaired, 'rb') as f:
-        NNimpairedresults = pickle.load(f)
+    with open(BL_P2, 'rb') as f:
+        BL_P2 = pickle.load(f)
 
-    with open(baselineImpaired, 'rb') as f:
-        baselineimpaired_results = pickle.load(f)
+    with open(BL_P3, 'rb') as f:
+        BL_P3 = pickle.load(f)
+
+    with open(E2E_noRapp, 'rb') as f:
+        E2E_noRapp = pickle.load(f)
+
+    with open(E2E_P1, 'rb') as f:
+        E2E_P1 = pickle.load(f)
+
+    with open(E2E_P2, 'rb') as f:
+        E2E_P2 = pickle.load(f)
+
+    with open(E2E_P3, 'rb') as f:
+        E2E_P3 = pickle.load(f)
 
     # Extract EB/No values, BLER, and BER specifically for 'autoencoder-NN'
-    ebno_dbs_nn = results['ebno_dbs']['autoencoder-NN']
-    BLER_nn = results['BLER']['autoencoder-NN']
-    BER_nn = results['BER']['autoencoder-NN']
+    ebno_dbs_BL_noRapp = BL_noRapp['ebno_dbs']['baseline']
+    BLER_BL_noRapp = BL_noRapp['BLER']['baseline']
+    BER_BL_noRapp = BL_noRapp['BER']['baseline']
 
-    ebno_dbs_baseline = baseline_results['ebno_dbs']['baseline']
-    BLER_baseline = baseline_results['BLER']['baseline']
-    BER_baseline = baseline_results['BER']['baseline']
+    ebno_dbs_BL_P1 = BL_P1['ebno_dbs']['baseline']
+    BLER_BL_P1= BL_P1['BLER']['baseline']
+    BER_BL_P1= BL_P1['BER']['baseline']
 
-    ebno_dbs_impaired_nn = NNimpairedresults['ebno_dbs']['autoencoder-NN']
-    BLER_impaired_nn = NNimpairedresults['BLER']['autoencoder-NN']
-    BER_impaired_nn = NNimpairedresults['BER']['autoencoder-NN']
+    ebno_dbs_BL_P2 = BL_P2['ebno_dbs']['baseline']
+    BLER_BL_P2= BL_P2['BLER']['baseline']
+    BER_BL_P2= BL_P2['BER']['baseline']
 
-    ebno_dbs_impaired_baseline = baselineimpaired_results['ebno_dbs']['baseline']
-    BLER_impaired_baseline = baselineimpaired_results['BLER']['baseline']
-    BER_impaired_baseline = baselineimpaired_results['BER']['baseline']
+    ebno_dbs_BL_P3 = BL_P3['ebno_dbs']['baseline']
+    BLER_BL_P3= BL_P3['BLER']['baseline']
+    BER_BL_P3= BL_P3['BER']['baseline']
+
+    
+    ebno_dbsE2E_noRapp = E2E_noRapp['ebno_dbs']['autoencoder-NN']
+    BLER_E2E_noRapp = E2E_noRapp['BLER']['autoencoder-NN']
+    BER_E2E_noRapp = E2E_noRapp['BER']['autoencoder-NN']
+
+    ebno_dbsE2E_P1 = E2E_P1['ebno_dbs']['autoencoder-NN']
+    BLER_E2E_P1= E2E_P1['BLER']['autoencoder-NN']
+    BER_E2E_P1= E2E_P1['BER']['autoencoder-NN']
+
+    ebno_dbsE2E_P2 = E2E_P2['ebno_dbs']['autoencoder-NN']
+    BLER_E2E_P2= E2E_P2['BLER']['autoencoder-NN']
+    BER_E2E_P2= E2E_P2['BER']['autoencoder-NN']
+
+    ebno_dbsE2E_P3 = E2E_P3['ebno_dbs']['autoencoder-NN']
+    BLER_E2E_P3= E2E_P3['BLER']['autoencoder-NN']
+    BER_E2E_P3= E2E_P3['BER']['autoencoder-NN']
+
 
 
     # Create a figure with two subplots, one for BER and one for BLER
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
     # Plot BER on the top subplot
-    ax1.semilogy(ebno_dbs_nn, BER_nn, 'x-', c='C1', label='BER - NN model')
-    ax1.semilogy(ebno_dbs_baseline, BER_baseline, 'x-', c='C2', label='BER - 64 QAM')
-    ax1.semilogy(ebno_dbs_impaired_nn, BER_impaired_nn, 'x-', c='C3', label='BER - NN model impaired')
-    ax1.semilogy(ebno_dbs_impaired_baseline, BER_impaired_baseline, 'x-', c='C4', label='BER - 64 QAM impaired')
+    ax1.semilogy(ebno_dbsE2E_noRapp, BER_E2E_noRapp, 'x-', c='C1', label='E2E, no Rapp PA')
+    ax1.semilogy(ebno_dbs_BL_noRapp, BER_BL_noRapp, 'x-', c='C2', label='BL, no Rapp PA')
+    ax1.semilogy(ebno_dbsE2E_P1, BER_E2E_P1, 'x-', c='C3', label='E2E, P = 1')
+    ax1.semilogy(ebno_dbsE2E_P2, BER_E2E_P2, 'x-', c='C4', label='E2E, P = 2')
+    ax1.semilogy(ebno_dbsE2E_P3, BER_E2E_P3, 'x-', c='C5', label='E2E, P = 3')
+    ax1.semilogy(ebno_dbs_BL_P1, BER_BL_P1, 'x-', c='C6', label='BL, P = 1')
+    ax1.semilogy(ebno_dbs_BL_P2, BER_BL_P2, 'x-', c='C7', label='BL, P = 2')
+    ax1.semilogy(ebno_dbs_BL_P3, BER_BL_P3, 'x-', c='C8', label='BL, P = 3')
     #ax1.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
     ax1.set_ylabel("BER")
     ax1.grid(which="both", linestyle='--', linewidth=0.5)
     ax1.legend()
-    ax1.set_ylim((1e-3, 0.3))
-    ax1.set_xlim((6, 11))
+    ax1.set_ylim((1e-4, 0.3))
+    ax1.set_xlim((6, 18))
 
     # Plot BLER on the bottom subplot
-    ax2.semilogy(ebno_dbs_nn, BLER_nn, 'o-', c='C1', label='BLER - NN model')
-    ax2.semilogy(ebno_dbs_baseline, BLER_baseline, 'o-', c='C2', label='BLER - 64 QAM')
-    ax2.semilogy(ebno_dbs_impaired_nn, BLER_impaired_nn, 'o-', c='C3', label='BLER - NN model impaired')
-    ax2.semilogy(ebno_dbs_impaired_baseline, BLER_impaired_baseline, 'o-', c='C4', label='BLER - 64 QAM impaired')
+    ax2.semilogy(ebno_dbsE2E_noRapp, BLER_E2E_noRapp, 'x-', c='C1', label='E2E, no Rapp PA')
+    ax2.semilogy(ebno_dbs_BL_noRapp, BLER_BL_noRapp, 'x-', c='C2', label='BL, no Rapp PA')
+    ax2.semilogy(ebno_dbsE2E_P1, BLER_E2E_P1, 'x-', c='C3', label='E2E, P = 1')
+    ax2.semilogy(ebno_dbsE2E_P2, BLER_E2E_P2, 'x-', c='C4', label='E2E, P = 2')
+    ax2.semilogy(ebno_dbsE2E_P3, BLER_E2E_P3, 'x-', c='C5', label='E2E, P = 3')
+    ax2.semilogy(ebno_dbs_BL_P1, BLER_BL_P1, 'x-', c='C6', label='BL, P = 1')
+    ax2.semilogy(ebno_dbs_BL_P2, BLER_BL_P2, 'x-', c='C7', label='BL, P = 2')
+    ax2.semilogy(ebno_dbs_BL_P3, BLER_BL_P3, 'x-', c='C8', label='BL, P = 3')
     #ax2.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
     ax2.set_xlabel(r"$E_b/N_0$ (dB)")
     ax2.set_ylabel("BLER")
     ax2.grid(which="both", linestyle='--', linewidth=0.5)
     ax2.legend()
-    ax2.set_ylim((1e-3, 1))
-    ax1.set_xlim((6, 11))
+    ax2.set_ylim((1e-4, 1))
+    ax1.set_xlim((6, 18))
 
     # Adjust layout to prevent overlap
     plt.tight_layout()
@@ -350,21 +388,31 @@ def plot_grid_constellation(mapper_file="x_mapper.pkl", demapper_file="y_demappe
 #calling functions 
 ##################################################
 # Plot the BER and BLER results from "bler_results.pkl"
-plot_ber_bler("bler_resultsNN_conv_no_imp.pkl","bler_results_baseline_correct_1.pkl","bler_resultsNN_conv.pkl","bler_results_baseline_impaired.pkl")
+plot_ber_bler(
+    "bler_results_baseline_correct_1.pkl",
+    "bler_results_baseline_P=1.pkl",
+    "bler_results_baseline_P=2.pkl",
+    "bler_results_baseline_P=3.pkl",
+    # Add more signals below as needed
+    "bler_resultsNN_conv_no_imp.pkl",
+    "bler_resultsNN_conv_P=1.pkl",
+    "bler_resultsNN_conv_P=2.pkl",
+    "bler_resultsNN_conv_P=3.pkl"
+)
 # #plot_ber_bler_NN("bler_results.pkl")
 
-# Plot the constellation before training
-plot_constellation("constellation_dataNN_RAPP_included.pkl", stage="constellation_before", num_bits_per_symbol=6)
+# # Plot the constellation before training
+# plot_constellation("constellation_dataNN_RAPP_included.pkl", stage="constellation_before", num_bits_per_symbol=6)
 
-# Plot the constellation after training
-plot_constellation("constellation_dataNN_RAPP_included.pkl", stage="constellation_after", num_bits_per_symbol=6)
+# # Plot the constellation after training
+# plot_constellation("constellation_dataNN_RAPP_included.pkl", stage="constellation_after", num_bits_per_symbol=6)
 
 # # Plot baseline constellation
 # #plot_constellation_baseline("constellation_baseline.pkl")
 
 #plot loss function:
 
-plot_loss_function("loss_values.pkl","loss_values_plot.png")
+plot_loss_function("loss_valuesConv.pkl","loss_values_plot_Conv.png")
 
 # Example usage
 # file_names = [
