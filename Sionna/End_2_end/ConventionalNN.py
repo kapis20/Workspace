@@ -202,7 +202,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
             # ########################################
             self.RappModel = RappPowerAmplifier(
                 saturation_amplitude = 1,
-                smoothness_factor = 1
+                smoothness_factor = 2
             )
             self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
             self.decoder = LDPC5GDecoder(
@@ -413,7 +413,7 @@ results['BLER']['autoencoder-NN'] = bler_NN.numpy()
 results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
 # Save the results to a file (optional)
-with open("bler_resultsNN_conv_P=1.pkl", 'wb') as f:
+with open("bler_resultsNN_conv_P=2.pkl", 'wb') as f:
     pickle.dump((results), f)
 
 
