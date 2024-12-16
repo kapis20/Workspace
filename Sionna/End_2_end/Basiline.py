@@ -401,13 +401,13 @@ selected_ebno_dbs = [9]  # Adjust as needed
 
 
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
 
 # Save the results to a file (optional)
-with open("bler_results_baseline.pkl", 'wb') as f:
+with open("bler_results_baseline_P=1.pkl", 'wb') as f:
     pickle.dump(results_baseline, f)
 
 
