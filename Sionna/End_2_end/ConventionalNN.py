@@ -202,7 +202,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
             # ########################################
             self.RappModel = RappPowerAmplifier(
                 saturation_amplitude = 1,
-                smoothness_factor = 3
+                smoothness_factor = 1
             )
             self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
             self.decoder = LDPC5GDecoder(
@@ -406,38 +406,38 @@ load_weights(model, model_weights_path)
 # SNR
 ###################################################
 
-# ber_NN, bler_NN = sim_ber(
-#     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
-#     #soft estimates added for demapping 
-# results['BLER']['autoencoder-NN'] = bler_NN.numpy()
-# results['BER']['autoencoder-NN'] = ber_NN.numpy()
+ber_NN, bler_NN = sim_ber(
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    #soft estimates added for demapping 
+results['BLER']['autoencoder-NN'] = bler_NN.numpy()
+results['BER']['autoencoder-NN'] = ber_NN.numpy()
 
-# # Save the results to a file (optional)
-# with open("bler_resultsNN_conv_RAPP_P=1.pkl", 'wb') as f:
-#     pickle.dump((results), f)
+# Save the results to a file (optional)
+with open("bler_resultsNN_conv_RAPP_Trained_P=1.pkl", 'wb') as f:
+    pickle.dump((results), f)
 
 
 ##############################################
 # Signals from the model
 # ########################################### 
 
-selected_ebno_dbs = 9.0  # Adjust as needed
-selected_ebno_dbs = tf.constant(selected_ebno_dbs, dtype=tf.float32)  # Convert to TensorFlow tensor
-print(f"Starting evaluation for Eb/N0 = {selected_ebno_dbs} dB...")  # Print current Eb/N0
-uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, selected_ebno_dbs)
-selected_ebno_dbs_value = selected_ebno_dbs.numpy()  # Convert tensor to a Python float
-x_rrcf_signals[selected_ebno_dbs_value] = x_rrcf
-# bits_after_mapper[selected_ebno_dbs_value] = x
-# bits_before_demapper[selected_ebno_dbs_value] = y_ds
-print("All selected Eb/N0 evaluations completed.")
+# selected_ebno_dbs = 9.0  # Adjust as needed
+# selected_ebno_dbs = tf.constant(selected_ebno_dbs, dtype=tf.float32)  # Convert to TensorFlow tensor
+# print(f"Starting evaluation for Eb/N0 = {selected_ebno_dbs} dB...")  # Print current Eb/N0
+# uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, selected_ebno_dbs)
+# selected_ebno_dbs_value = selected_ebno_dbs.numpy()  # Convert tensor to a Python float
+# x_rrcf_signals[selected_ebno_dbs_value] = x_rrcf
+# # bits_after_mapper[selected_ebno_dbs_value] = x
+# # bits_before_demapper[selected_ebno_dbs_value] = y_ds
+# print("All selected Eb/N0 evaluations completed.")
 
 
 
-# Save the x_rrcf signals to a file (as NumPy or TF tensors)
-signal_file = "x_rrcf_signals_RAPP_trained_p_3NN_conv.pkl"
-with open(signal_file, "wb") as f:
-    x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
-    pickle.dump(x_rrcf_numpy, f)
+# # Save the x_rrcf signals to a file (as NumPy or TF tensors)
+# signal_file = "x_rrcf_signals_RAPP_trained_p_3NN_conv.pkl"
+# with open(signal_file, "wb") as f:
+#     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
+#     pickle.dump(x_rrcf_numpy, f)
 
 
 # signal_Rappfile = "x_rrcf_RappNN.pkl"
