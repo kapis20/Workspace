@@ -28,6 +28,13 @@ signal_file_baseline_noisy2="x_rrcf_signals_RAPP_p_2_baseline.pkl"
 #p = 3 
 signal_file_baseline_noisy3="x_rrcf_signals_RAPP_p_3_baseline.pkl"
 
+#NN model RAPP trained 
+#p=1
+signal_file_noisy_RAPP1="x_rrcf_signals_RAPP_trained_p_1NN_conv.pkl"
+
+#p = 3 
+signal_file_noisy_RAPP3="x_rrcf_signals_RAPP_trained_p_3NN_conv.pkl"
+
 ################################################
 # Loading signals 
 ################################################
@@ -63,6 +70,12 @@ with open(signal_file_baseline_noisy2, "rb") as f:
 with open(signal_file_baseline_noisy3, "rb") as f:
     Baseline_noisy_signals_p3 = pickle.load(f)
 
+##NN model RAPP trained 
+with open(signal_file_noisy_RAPP1, "rb") as f:
+    NNloaded_signals_noisy_RAPP_p1 = pickle.load(f)
+
+with open(signal_file_noisy_RAPP3, "rb") as f:
+    NNloaded_signals_noisy_RAPP_p3 = pickle.load(f)
 
 
 def compute_cdf(signal):
@@ -90,13 +103,15 @@ def compute_cdf(signal):
 
 signals = {
     #"E2E no impairment":NNloaded_signals[9],
-    "E2E, p=1": NNloaded_signals_noisy_p1[9],
+    #"E2E, p=1": NNloaded_signals_noisy_p1[9],
     #"E2E, p=2": NNloaded_signals_noisy_p2[9],
-    "E2E, p=3": NNloaded_signals_noisy_p3[9],
+    #"E2E, p=3": NNloaded_signals_noisy_p3[9],
     #"BL no impairement": Baseline_loaded_signals[9],
     "BL, p=1": Baseline_noisy_signals_p1[9],
     #"BL, p=2": Baseline_noisy_signals_p2[9],
-    "BL, p=3": Baseline_noisy_signals_p3[9]
+    "BL, p=3": Baseline_noisy_signals_p3[9],
+    "E2E RAPP, p=1": NNloaded_signals_noisy_RAPP_p1[9],
+    "E2E RAPP, p=3": NNloaded_signals_noisy_RAPP_p3[9]
 
 }
 

@@ -151,6 +151,15 @@ signal_file_baseline_noisy2="x_rrcf_signals_RAPP_p_2_baseline.pkl"
 #p = 3 
 signal_file_baseline_noisy3="x_rrcf_signals_RAPP_p_3_baseline.pkl"
 
+#NN Rapp 
+#NN model RAPP trained 
+#p=1
+signal_file_noisy_RAPP1="x_rrcf_signals_RAPP_trained_p_1NN_conv.pkl"
+
+#p = 3 
+signal_file_noisy_RAPP3="x_rrcf_signals_RAPP_trained_p_3NN_conv.pkl"
+
+
 ################################################
 # Loading signals 
 ################################################
@@ -185,6 +194,14 @@ with open(signal_file_baseline_noisy2, "rb") as f:
 
 with open(signal_file_baseline_noisy3, "rb") as f:
     Baseline_noisy_signals_p3 = pickle.load(f)
+
+
+##NN model RAPP trained 
+with open(signal_file_noisy_RAPP1, "rb") as f:
+    NNloaded_signals_noisy_RAPP_p1 = pickle.load(f)
+
+with open(signal_file_noisy_RAPP3, "rb") as f:
+    NNloaded_signals_noisy_RAPP_p3 = pickle.load(f)
 ###################################################
 # Calculate CCDF
 ###################################################
@@ -199,12 +216,14 @@ ccdf_calculator = CCDFCalculator()
 # Define signal labels and signal sets for iteration
 signal_labels = [
     "E2E no impairment", "E2E p=1", "E2E p=2", "E2E p=3",
-    "BL no impairment", "BL p=1", "BL p=2", "BL p=3"
+    "BL no impairment", "BL p=1", "BL p=2", "BL p=3",
+    "E2E RAPP, p=1", "E2E RAPP, p=3"
 ]
 
 signal_sets = [
     NNloaded_signals, NNloaded_signals_noisy_p1, NNloaded_signals_noisy_p2, NNloaded_signals_noisy_p3,
-    Baseline_loaded_signals, Baseline_noisy_signals_p1, Baseline_noisy_signals_p2, Baseline_noisy_signals_p3
+    Baseline_loaded_signals, Baseline_noisy_signals_p1, Baseline_noisy_signals_p2, Baseline_noisy_signals_p3,
+    NNloaded_signals_noisy_RAPP_p1, NNloaded_signals_noisy_RAPP_p3
 ]
 
 # Plot CCDF for each signal

@@ -41,6 +41,13 @@ signal_file_baseline_noisy2="x_rrcf_signals_RAPP_p_2_baseline.pkl"
 #p = 3 
 signal_file_baseline_noisy3="x_rrcf_signals_RAPP_p_3_baseline.pkl"
 
+
+#NN model RAPP trained 
+#p=1
+signal_file_noisy_RAPP1="x_rrcf_signals_RAPP_trained_p_1NN_conv.pkl"
+
+#p = 3 
+signal_file_noisy_RAPP3="x_rrcf_signals_RAPP_trained_p_3NN_conv.pkl"
 ################################################
 # Loading signals 
 ################################################
@@ -75,6 +82,13 @@ with open(signal_file_baseline_noisy2, "rb") as f:
 
 with open(signal_file_baseline_noisy3, "rb") as f:
     Baseline_noisy_signals_p3 = pickle.load(f)
+
+##NN model RAPP trained 
+with open(signal_file_noisy_RAPP1, "rb") as f:
+    NNloaded_signals_noisy_RAPP_p1 = pickle.load(f)
+
+with open(signal_file_noisy_RAPP3, "rb") as f:
+    NNloaded_signals_noisy_RAPP_p3 = pickle.load(f)
 ###########################################  
 # Check the loaded data
 ###########################################
@@ -323,6 +337,12 @@ freqs_Baseline_p_2, psd_Baseline_p_2 = empirical_psd(Baseline_noisy_signals_p2[9
 
 freqs_Baseline_p_3, psd_Baseline_p_3 = empirical_psd(Baseline_noisy_signals_p3[9], show = False, oversampling = 4.0, ylim=ylim)
 
+#E2E Rapp 
+freqs_E2E_RAPP_P1, psd_E2E_RAPP_P1 = empirical_psd(NNloaded_signals_noisy_RAPP_p1[9], show = False, oversampling = 4.0, ylim=ylim)
+
+freqs_E2E_RAPP_P3, psd_E2E_RAPP_P3 = empirical_psd(NNloaded_signals_noisy_RAPP_p3[9], show = False, oversampling = 4.0, ylim=ylim)
+##NN model RAPP trained 
+
 # #find_3db_points(freqs_NN_no_imp,psd_NN_no_imp)
 # print("ACLR 3dB is",compute_aclr_3dB(freqs_NN_no_imp,psd_NN_no_imp))
 # print("ACLR first slope is",compute_aclr_first_slope(freqs_NN_no_imp,psd_NN_no_imp,-45))
@@ -347,6 +367,10 @@ ACLR_3dB_NN = [
     compute_aclr_3dB(freqs_NN_p_2, psd_NN_p_2),
     compute_aclr_3dB(freqs_NN_p_3, psd_NN_p_3),
 ]
+ACLR_3dB_E2E_RAPP = [
+    compute_aclr_3dB(freqs_E2E_RAPP_P1, psd_E2E_RAPP_P1),
+    compute_aclr_3dB(freqs_E2E_RAPP_P3, psd_E2E_RAPP_P3),
+]
 ACLR_Sionna_BL = [
     SionnaACLR(freqs_Baseline_no_imp, psd_Baseline_no_imp),
     SionnaACLR(freqs_Baseline_p_1, psd_Baseline_p_1),
@@ -358,6 +382,11 @@ ACLR_Sionna_NN = [
     SionnaACLR(freqs_NN_p_1, psd_NN_p_1),
     SionnaACLR(freqs_NN_p_2, psd_NN_p_2),
     SionnaACLR(freqs_NN_p_3, psd_NN_p_3),
+]
+
+ACLR_Sionna_E2E_RAPP = [
+    SionnaACLR(freqs_E2E_RAPP_P1, psd_E2E_RAPP_P1),
+    SionnaACLR(freqs_E2E_RAPP_P3, psd_E2E_RAPP_P3),
 ]
 ACLR_1st_slope_BL = [
     compute_aclr_first_slope(freqs_Baseline_no_imp, psd_Baseline_no_imp, -45),
@@ -372,15 +401,21 @@ ACLR_1st_slope_NN = [
     compute_aclr_first_slope(freqs_NN_p_3, psd_NN_p_3, -45),
 ]
 
+ACLR_1st_slope_E2E_RAPP = [
+    compute_aclr_first_slope(freqs_E2E_RAPP_P1, psd_E2E_RAPP_P1,-40),
+    compute_aclr_first_slope(freqs_E2E_RAPP_P3, psd_E2E_RAPP_P3,-40),
+]
+
 # Combine values into a table
 data = {
     "System": [
         "BL (no RAPP)", "BL (p=1)", "BL (p=2)", "BL (p=3)",
-        "E2E (no RAPP)", "E2E (p=1)", "E2E (p=2)", "E2E (p=3)"
+        "E2E (no RAPP)", "E2E (p=1)", "E2E (p=2)", "E2E (p=3)",
+        "E2E RAPP (p=1)", "E2E RAPP (p=3)"
     ],
-    "3dB Method": ACLR_3dB_BL + ACLR_3dB_NN,
-    "Sionna Method": ACLR_Sionna_BL + ACLR_Sionna_NN,
-    "1st Slope Method": ACLR_1st_slope_BL + ACLR_1st_slope_NN,
+    "3dB Method": ACLR_3dB_BL + ACLR_3dB_NN + ACLR_3dB_E2E_RAPP,
+    "Sionna Method": ACLR_Sionna_BL + ACLR_Sionna_NN + ACLR_Sionna_E2E_RAPP,
+    "1st Slope Method": ACLR_1st_slope_BL + ACLR_1st_slope_NN + ACLR_1st_slope_E2E_RAPP,
 }
 
 # Create a DataFrame
@@ -406,8 +441,8 @@ table_df.to_latex("ACLR_Comparison_Table.tex", index=False, caption="ACLR Compar
 
 
 
-#1 3dB 
-#BL 
+# #1 3dB 
+# #BL 
 # # Dynamically append values
 # ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_no_imp, psd_NN_no_imp))
 # ACLR_3dB_BL.append(compute_aclr_3dB(freqs_Baseline_p_1, psd_Baseline_p_1))
@@ -418,6 +453,10 @@ table_df.to_latex("ACLR_Comparison_Table.tex", index=False, caption="ACLR Compar
 # ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_1, psd_NN_p_1))
 # ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_2, psd_NN_p_2))
 # ACLR_3dB_NN.append(compute_aclr_3dB(freqs_NN_p_3, psd_NN_p_3))
+
+# ACLR_3dB_E2E_RAPP.append(compute_aclr_3dB(freqs_E2E_RAPP_P1, psd_E2E_RAPP_P1))
+# ACLR_3dB_E2E_RAPP.append(compute_aclr_3dB(freqs_E2E_RAPP_P3, psd_E2E_RAPP_P3))
+
 
 # #2
 # # Compute ACLR_Sionna_BL
@@ -432,6 +471,9 @@ table_df.to_latex("ACLR_Comparison_Table.tex", index=False, caption="ACLR Compar
 # ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_2, psd_NN_p_2))
 # ACLR_Sionna_NN.append(SionnaACLR(freqs_NN_p_3, psd_NN_p_3))
 
+# ACLR_Sionna_E2E_RAPP.append(SionnaACLR(freqs_E2E_RAPP_P1, psd_E2E_RAPP_P1))
+# ACLR_Sionna_E2E_RAPP.append(SionnaACLR(freqs_E2E_RAPP_P3, psd_E2E_RAPP_P3))
+
 # #3
 # # Compute ACLR_1st_slope_BL
 # ACLR_1st_slope_BL.append(compute_aclr_first_slope(freqs_Baseline_no_imp, psd_Baseline_no_imp,-45))
@@ -445,27 +487,33 @@ table_df.to_latex("ACLR_Comparison_Table.tex", index=False, caption="ACLR Compar
 # ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_2, psd_NN_p_2,-45))
 # ACLR_1st_slope_NN.append(compute_aclr_first_slope(freqs_NN_p_3, psd_NN_p_3,-45))
 
-# # Plot the PSDs
-# ##NN:
-# plt.figure(figsize=(10, 6))
-# #plt.plot(freqs_NN_no_imp, 10 * np.log10(psd_NN_no_imp), label="E2N - no impairment")
-# plt.plot(freqs_NN_p_1, 10 * np.log10(psd_NN_p_1), label="E2N - p=1")
-# # plt.plot(freqs_NN_p_2, 10 * np.log10(psd_NN_p_2), label="E2E - p=2")
-# plt.plot(freqs_NN_p_3, 10 * np.log10(psd_NN_p_3), label="E2E - p=3")
-# #Baseline:
-# #lt.plot(freqs_Baseline_no_imp, 10 * np.log10(psd_Baseline_no_imp), label="BL - no impairment")
-# plt.plot(freqs_Baseline_p_1, 10 * np.log10(psd_Baseline_p_1), label="BL - p=1")
-# # plt.plot(freqs_Baseline_p_2, 10 * np.log10(psd_Baseline_p_2), label="BL - p=2")
-# plt.plot(freqs_Baseline_p_3, 10 * np.log10(psd_Baseline_p_3), label="BL - p=3")
-# plt.title("Power Spectral Density with RAPP Impairments")
-# plt.xlabel("Normalized Frequency")
-# plt.xlim([freqs_NN_no_imp[0], freqs_NN_no_imp[-1]])
-# plt.ylabel(r"$\mathbb{E}\left[|X(f)|^2\right]$ (dB)")
-# plt.ylim(ylim)
-# plt.grid(True, which="both")
-# plt.legend()
-# plt.savefig("PSD_new_P1P3.png")
-# plt.show()
+# ACLR_1st_slope_E2E_RAPP.append(compute_aclr_first_slope(freqs_E2E_RAPP_P1, psd_E2E_RAPP_P1))
+# ACLR_1st_slope_E2E_RAPP.append(compute_aclr_first_slope(freqs_E2E_RAPP_P3, psd_E2E_RAPP_P3))
+
+# Plot the PSDs
+##NN:
+plt.figure(figsize=(10, 6))
+plt.plot(freqs_NN_no_imp, 10 * np.log10(psd_NN_no_imp), label="E2N - no impairment")
+plt.plot(freqs_NN_p_1, 10 * np.log10(psd_NN_p_1), label="E2E - p=1")
+plt.plot(freqs_NN_p_2, 10 * np.log10(psd_NN_p_2), label="E2E - p=2")
+plt.plot(freqs_NN_p_3, 10 * np.log10(psd_NN_p_3), label="E2E - p=3")
+#Baseline:
+plt.plot(freqs_Baseline_no_imp, 10 * np.log10(psd_Baseline_no_imp), label="BL - no impairment")
+plt.plot(freqs_Baseline_p_1, 10 * np.log10(psd_Baseline_p_1), label="BL - p=1")
+plt.plot(freqs_Baseline_p_2, 10 * np.log10(psd_Baseline_p_2), label="BL - p=2")
+plt.plot(freqs_E2E_RAPP_P1, 10 * np.log10(psd_E2E_RAPP_P1), label="E2E RAPP - p=1")
+plt.plot(freqs_E2E_RAPP_P3, 10 * np.log10(psd_E2E_RAPP_P3), label="E2E RAPP - p=3")
+#E2E RAPP trained 
+plt.plot(freqs_Baseline_p_3, 10 * np.log10(psd_Baseline_p_3), label="BL - p=3")
+plt.title("Power Spectral Density with RAPP Impairments")
+plt.xlabel("Normalized Frequency")
+plt.xlim([freqs_NN_no_imp[0], freqs_NN_no_imp[-1]])
+plt.ylabel(r"$\mathbb{E}\left[|X(f)|^2\right]$ (dB)")
+plt.ylim(ylim)
+plt.grid(True, which="both")
+plt.legend()
+plt.savefig("PSD_new_P1P3.png")
+plt.show()
 
 
 # # Plot 1: ACLR_3dB_BL and ACLR_3dB_NN
