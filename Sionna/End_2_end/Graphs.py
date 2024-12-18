@@ -11,7 +11,7 @@ loss_file_path = "loss_values.pkl"
 ##############################################
 #PLot BER and BLER function
 ##############################################
-def plot_ber_bler(BL_noRapp,BL_P1,BL_P2, BL_P3,E2E_noRapp, E2E_P1, E2E_P2, E2E_P3):
+def plot_ber_bler(BL_noRapp,BL_P1,BL_P2, BL_P3,E2E_noRapp, E2E_P1, E2E_P2, E2E_P3,E2E_RaPP_P1,E2E_RaPP_P3):
 # Load the data from the file
 
     with open(BL_noRapp, 'rb') as f:
@@ -37,6 +37,13 @@ def plot_ber_bler(BL_noRapp,BL_P1,BL_P2, BL_P3,E2E_noRapp, E2E_P1, E2E_P2, E2E_P
 
     with open(E2E_P3, 'rb') as f:
         E2E_P3 = pickle.load(f)
+
+    with open(E2E_RaPP_P1, 'rb') as f:
+        E2E_RAPP_P1 = pickle.load(f)
+
+    with open(E2E_RaPP_P3, 'rb') as f:
+        E2E_RAPP_P3 = pickle.load(f)
+
 
     # Extract EB/No values, BLER, and BER specifically for 'autoencoder-NN'
     ebno_dbs_BL_noRapp = BL_noRapp['ebno_dbs']['baseline']
@@ -72,6 +79,15 @@ def plot_ber_bler(BL_noRapp,BL_P1,BL_P2, BL_P3,E2E_noRapp, E2E_P1, E2E_P2, E2E_P
     BLER_E2E_P3= E2E_P3['BLER']['autoencoder-NN']
     BER_E2E_P3= E2E_P3['BER']['autoencoder-NN']
 
+    #E2E RAPP trained
+    ebno_dbsE2E_RAPP_P1 = E2E_RAPP_P1['ebno_dbs']['autoencoder-NN']
+    BLER_E2E_RAPP_P1= E2E_RAPP_P1['BLER']['autoencoder-NN']
+    BER_E2E_RAPP_P1= E2E_RAPP_P1['BER']['autoencoder-NN']
+
+    ebno_dbsE2E_RAPP_P3 = E2E_RAPP_P3['ebno_dbs']['autoencoder-NN']
+    BLER_E2E_RAPP_P3= E2E_RAPP_P3['BLER']['autoencoder-NN']
+    BER_E2E_RAPP_P3= E2E_RAPP_P3['BER']['autoencoder-NN']
+
 
 
     # Create a figure with two subplots, one for BER and one for BLER
@@ -86,6 +102,8 @@ def plot_ber_bler(BL_noRapp,BL_P1,BL_P2, BL_P3,E2E_noRapp, E2E_P1, E2E_P2, E2E_P
     ax1.semilogy(ebno_dbs_BL_P1, BER_BL_P1, 'x-', c='C6', label='BL, P = 1')
     ax1.semilogy(ebno_dbs_BL_P2, BER_BL_P2, 'x-', c='C7', label='BL, P = 2')
     ax1.semilogy(ebno_dbs_BL_P3, BER_BL_P3, 'x-', c='C8', label='BL, P = 3')
+    ax1.semilogy(ebno_dbsE2E_RAPP_P1, BER_E2E_RAPP_P1, 'x-', c='C9', label='E2E RAPP, P = 1')
+    ax1.semilogy(ebno_dbsE2E_RAPP_P3, BER_E2E_RAPP_P3, 'x-', c='C10', label='E2E RAPP, P = 3')
     #ax1.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
     ax1.set_ylabel("BER")
     ax1.grid(which="both", linestyle='--', linewidth=0.5)
@@ -102,6 +120,8 @@ def plot_ber_bler(BL_noRapp,BL_P1,BL_P2, BL_P3,E2E_noRapp, E2E_P1, E2E_P2, E2E_P
     ax2.semilogy(ebno_dbs_BL_P1, BLER_BL_P1, 'x-', c='C6', label='BL, P = 1')
     ax2.semilogy(ebno_dbs_BL_P2, BLER_BL_P2, 'x-', c='C7', label='BL, P = 2')
     ax2.semilogy(ebno_dbs_BL_P3, BLER_BL_P3, 'x-', c='C8', label='BL, P = 3')
+    ax2.semilogy(ebno_dbsE2E_RAPP_P1, BLER_E2E_RAPP_P1, 'x-', c='C9', label='E2E RAPP, P = 1')
+    ax2.semilogy(ebno_dbsE2E_RAPP_P3, BLER_E2E_RAPP_P3, 'x-', c='C10', label='E2E RAPP, P = 3')
     #ax2.axvline(6.82, color='red', linestyle='--', label="Shannon's Band")
     ax2.set_xlabel(r"$E_b/N_0$ (dB)")
     ax2.set_ylabel("BLER")
@@ -397,7 +417,10 @@ plot_ber_bler(
     "bler_resultsNN_conv_no_imp.pkl",
     "bler_resultsNN_conv_P=1.pkl",
     "bler_resultsNN_conv_P=2.pkl",
-    "bler_resultsNN_conv_P=3.pkl"
+    "bler_resultsNN_conv_P=3.pkl",
+    "bler_resultsNN_conv_RAPP_Trained_P=1.pkl",
+    "bler_resultsNN_conv_RAPP_Trained_P=3.pkl"
+
 )
 # #plot_ber_bler_NN("bler_results.pkl")
 

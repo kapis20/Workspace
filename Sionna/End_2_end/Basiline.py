@@ -151,6 +151,9 @@ def enforce_PAPR_Constraints(x_rrcf,papr_constraint_db):
     )
     return x_rrcf_clipped
 
+
+
+    
 ###############################
 # Baseline
 ###############################
@@ -216,7 +219,7 @@ class Baseline(Model): # Inherits from Keras Model
         # Non linear noise - Rapp model 
         ########################################
         self.RappModel = RappPowerAmplifier(
-            saturation_amplitude = 1,
+            saturation_amplitude = 1.23,
             smoothness_factor = 3
         )
 
@@ -268,12 +271,22 @@ class Baseline(Model): # Inherits from Keras Model
 
         #Filter the upsampled sequence 
         x_rrcf = self.rrcf(x_us)
-
-
+       
+   
         #############################
         #Rapp noise addition 
         ###########################
+        # Normalize transmit power to 1 Watt per batch
+        power_per_batch = tf.reduce_mean(tf.abs(x_rrcf)**2, axis=1, keepdims=True)
+        scaling_factor = tf.sqrt(1.0 / power_per_batch)
+        scaling_factor=tf.cast(scaling_factor,tf.complex64)
+        x_rrcf = x_rrcf * scaling_factor
         x_rrcf_Rapp = self.RappModel(x_rrcf)
+    
+        # Normalize output signal to 1 Watt
+        #desired_power = 1.0
+     
+
         #tf.print("Shape of x_rrcf_Rapp is:", tf.shape(x_rrcf_Rapp))
         #tf.print("ACLR is (db)",10*np.log10(self.rrcf.aclr))
         # tf.print("Type of rrcf:", type(self.rrcf))
@@ -312,7 +325,12 @@ class Baseline(Model): # Inherits from Keras Model
         ##############################
         # Channel 
         ##############################
-        y = self.awgn_channel([x_rrcf_Rapp, no])
+        scaling_factor =tf.cast(scaling_factor,tf.float32)
+        no = no * scaling_factor  # Scale noise power
+        y = self.awgn_channel([x_rrcf, no])
+        scaling_factor_inv = tf.sqrt(power_per_batch)  # Inverse scaling factor
+        scaling_factor_inv = tf.cast(scaling_factor_inv, tf.complex64)
+        y = y * scaling_factor_inv
         ############################
         #matched filter, downsampling 
         ############################
@@ -354,7 +372,7 @@ class Baseline(Model): # Inherits from Keras Model
         decoded_bits = self.decoder(llr_de)
 
 
-        return uncoded_bits, decoded_bits, x_rrcf, x, y_ds
+        return uncoded_bits, decoded_bits, x_rrcf,x_rrcf_Rapp, x, y_ds
 
 
 
@@ -376,17 +394,17 @@ model = Baseline()
 # Specific Eb/N0 values for which signals are collected
 selected_ebno_dbs = [9]  # Adjust as needed
 # Evaluate model and collect signals
-# for ebno_db in selected_ebno_dbs:
-#     # Forward pass through the model
-#     print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
-#     uncoded_bits, decoded_bits, x_rrcf, x, y_ds = model(BATCH_SIZE, ebno_db)
+for ebno_db in selected_ebno_dbs:
+    # Forward pass through the model
+    print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
+    uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp, x, y_ds = model(BATCH_SIZE, ebno_db)
     
-#     # Save the `x_rrcf` signal (post-PAPR enforcement)
-#     # Assuming `x_rrcf` is stored in the model during the forward pass
-#     x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
-#     #x_rrcf_Rapp_signals[ebno_db] = x_rrcf_Rapp
-#     bits_after_mapper[ebno_db] = x
-#     bits_before_demapper[ebno_db] = y_ds
+    # Save the `x_rrcf` signal (post-PAPR enforcement)
+    # Assuming `x_rrcf` is stored in the model during the forward pass
+    x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
+    x_rrcf_Rapp_signals[ebno_db] = x_rrcf_Rapp
+    bits_after_mapper[ebno_db] = x
+    bits_before_demapper[ebno_db] = y_ds
 
 
 # print("All selected Eb/N0 evaluations completed.")
@@ -401,27 +419,27 @@ selected_ebno_dbs = [9]  # Adjust as needed
 
 
 ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1000, max_mc_iter=1000,soft_estimates=True) #was used 1000 and 10000
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
     #soft estimates added for demapping 
 results_baseline['BLER']['baseline'] = bler_NN.numpy()
 results_baseline['BER']['baseline'] = ber_NN.numpy()
 
 # Save the results to a file (optional)
-with open("bler_results_baseline_P=3.pkl", 'wb') as f:
+with open("bler_results_baseline_NEW_.pkl", 'wb') as f:
     pickle.dump(results_baseline, f)
 
 
-# # Save the x_rrcf signals to a file (as NumPy or TF tensors)
-# signal_file = "x_rrcf_signals_baseline_no_imp.pkl"
-# with open(signal_file, "wb") as f:
-#     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
-#     pickle.dump(x_rrcf_numpy, f)
+# Save the x_rrcf signals to a file (as NumPy or TF tensors)
+signal_file = "x_rrcf_signals_baseline_NEW_input.pkl"
+with open(signal_file, "wb") as f:
+    x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
+    pickle.dump(x_rrcf_numpy, f)
 
 
-# signal_Rappfile = "x_rrcf_Rapp.pkl"
-# with open(signal_Rappfile, "wb") as f:
-#     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
-#     pickle.dump(x_rrcf_Rapp_numpy, f)
+signal_Rappfile = "x_rrcf_BL_NEW_Rapp_output.pkl"
+with open(signal_Rappfile, "wb") as f:
+    x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
+    pickle.dump(x_rrcf_Rapp_numpy, f)
 
 # signal_mapperFile = "x_mapper.pkl"
 # with open(signal_mapperFile, "wb") as f:
