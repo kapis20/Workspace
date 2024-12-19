@@ -219,7 +219,7 @@ class Baseline(Model): # Inherits from Keras Model
         # Non linear noise - Rapp model 
         ########################################
         self.RappModel = RappPowerAmplifier(
-            saturation_amplitude = 1.23,
+            saturation_amplitude = 1,
             smoothness_factor = 3
         )
 
@@ -277,12 +277,21 @@ class Baseline(Model): # Inherits from Keras Model
         #Rapp noise addition 
         ###########################
         # Normalize transmit power to 1 Watt per batch
-        power_per_batch = tf.reduce_mean(tf.abs(x_rrcf)**2, axis=1, keepdims=True)
-        scaling_factor = tf.sqrt(1.0 / power_per_batch)
-        scaling_factor=tf.cast(scaling_factor,tf.complex64)
-        x_rrcf = x_rrcf * scaling_factor
+        # power_per_batch = tf.reduce_mean(tf.abs(x_rrcf)**2, axis=1, keepdims=True)
+        # scaling_factor = tf.sqrt(1.0 / power_per_batch)
+        # scaling_factor=tf.cast(scaling_factor,tf.complex64)
+        # x_rrcf = x_rrcf * scaling_factor
+
         x_rrcf_Rapp = self.RappModel(x_rrcf)
-    
+
+        # Normalize the power after Rapp model
+        # power_per_batch_rapp = tf.reduce_mean(tf.abs(x_rrcf_Rapp)**2, axis=1, keepdims=True)
+        # scaling_factor_rapp = tf.sqrt(1.0 / power_per_batch_rapp)
+        # scaling_factor_rapp = tf.cast(scaling_factor_rapp, tf.complex64)
+        # x_rrcf_Rapp_normalized = x_rrcf_Rapp * scaling_factor_rapp
+        # #x_rrcf = x_rrcf/scaling_factor
+         # Inverse scaling factor
+        # scaling_factor_inv = tf.cast(scaling_factor_inv, tf.complex64)
         # Normalize output signal to 1 Watt
         #desired_power = 1.0
      
@@ -325,15 +334,17 @@ class Baseline(Model): # Inherits from Keras Model
         ##############################
         # Channel 
         ##############################
-        scaling_factor =tf.cast(scaling_factor,tf.float32)
-        no = no * scaling_factor  # Scale noise power
-        y = self.awgn_channel([x_rrcf, no])
-        scaling_factor_inv = tf.sqrt(power_per_batch)  # Inverse scaling factor
-        scaling_factor_inv = tf.cast(scaling_factor_inv, tf.complex64)
-        y = y * scaling_factor_inv
+        # scaling_factor =tf.cast(scaling_factor,tf.float32)
+        # no = no * scaling_factor  # Scale noise power
+        y = self.awgn_channel([x_rrcf_Rapp, no])
+        # scaling_factor_inv = tf.pow(power_per_batch,2)  # Inverse scaling factor
+        # scaling_factor_inv = tf.cast(scaling_factor_inv, tf.complex64)
+        # y = y * scaling_factor_inv
         ############################
         #matched filter, downsampling 
         ############################
+        # scaling_factor =tf.cast(scaling_factor,tf.complex64)
+        # y = y/scaling_factor
         y_mf = self.rrcf(y)#, padding = "full")
         ##y_mf = self.rrcf(y)
         y_ds = self.ds(y_mf) #downsample sequence
@@ -418,25 +429,25 @@ for ebno_db in selected_ebno_dbs:
 
 
 
-ber_NN, bler_NN = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
-    #soft estimates added for demapping 
-results_baseline['BLER']['baseline'] = bler_NN.numpy()
-results_baseline['BER']['baseline'] = ber_NN.numpy()
+# ber_NN, bler_NN = sim_ber(
+#     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
+#     #soft estimates added for demapping 
+# results_baseline['BLER']['baseline'] = bler_NN.numpy()
+# results_baseline['BER']['baseline'] = ber_NN.numpy()
 
-# Save the results to a file (optional)
-with open("bler_results_baseline_NEW_.pkl", 'wb') as f:
-    pickle.dump(results_baseline, f)
+# # Save the results to a file (optional)
+# with open("bler_results_baseline_NEW_.pkl", 'wb') as f:
+#     pickle.dump(results_baseline, f)
 
 
 # Save the x_rrcf signals to a file (as NumPy or TF tensors)
-signal_file = "x_rrcf_signals_baseline_NEW_input.pkl"
+signal_file = "x_rrcf_signals_baseline_NEW_inputP=3.pkl"
 with open(signal_file, "wb") as f:
     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_numpy, f)
 
 
-signal_Rappfile = "x_rrcf_BL_NEW_Rapp_output.pkl"
+signal_Rappfile = "x_rrcf_BL_NEW_Rapp_outputP=3.pkl"
 with open(signal_Rappfile, "wb") as f:
     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_Rapp_numpy, f)

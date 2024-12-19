@@ -5,37 +5,83 @@ import pickle
 
 
 def Pout_Pin_Power(inputSig, outputSig):
-    # inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
-    # outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
+   
+    #Normalized
+    power_per_batch_In = tf.reduce_mean(tf.abs(inputSig)**2, axis=1, keepdims=True)
+    power_per_batch_Out = tf.reduce_mean(tf.abs(outputSig)**2, axis=1, keepdims=True)
+    scaling_factor_In = tf.sqrt(1.0 / power_per_batch_In)
+    scaling_factor_In=tf.cast(scaling_factor_In,tf.complex64)
+
+    scaling_factor_Out = tf.sqrt(1.0 / power_per_batch_Out)
+    scaling_factor_Out=tf.cast(scaling_factor_Out,tf.complex64)
+
+    inputSig = inputSig*scaling_factor_In
+    outputSig =outputSig*scaling_factor_Out
+
     inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
     outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
 
-    # inputPower_flat = inputPower.flatten()  # Shape: (batchSize * signal,)
-    # outputPower_flat = outputPower.flatten()  # Shape: (batchSize * signal,)
+   
 
     return inputPower, outputPower
 
 
 #baseline model:
 # File to save the signals
-signal_file_baseline = "x_rrcf_signals_baseline_no_imp.pkl"
 #signal_file_noisy = "x_rrcf_Rapp.pkl"
 # p = 1
-signal_file_baseline_noisy1="x_rrcf_signals_RAPP_p_1_baseline.pkl"
+signal_file_baseline_inputP1="x_rrcf_signals_baseline_NEW_inputP=1.pkl"
+signal_file_baseline_outputP1 = "x_rrcf_BL_NEW_Rapp_outputP=1.pkl"
 #p = 2 
-signal_file_baseline_output="x_rrcf_BL_NEW_Rapp_output.pkl"
+signal_file_baseline_inputP2="x_rrcf_signals_baseline_NEW_inputP=2.pkl"
+signal_file_baseline_outputP2 = "x_rrcf_BL_NEW_Rapp_outputP=2.pkl"
+
 #p = 3 
+signal_file_baseline_inputP3="x_rrcf_signals_baseline_NEW_inputP=3.pkl"
+signal_file_baseline_outputP3 = "x_rrcf_BL_NEW_Rapp_outputP=3.pkl"
+#No rapp
 signal_file_baseline_new="x_rrcf_signals_baseline_NEW_input.pkl"
+signal_file_baseline_output="x_rrcf_BL_NEW_Rapp_output.pkl"
 
 
+## NN 
+
+#No rapp
+signal_file_NN_input="x_rrcf_signals_trained_NN_conv_noRapp.pkl"
+signal_file_NN_output="x_rrcf_RappNN_ideal.pkl"
+
+# p = 1
+signal_file_NN_inputP1="x_rrcf_signals_trained_NN_conv_P=1(input).pkl"
+signal_file_NN_outputP1 = "x_rrcf_RappNN_P=1.pkl"
+
+# p = 2
+signal_file_NN_inputP2="x_rrcf_signals_trained_NN_conv_P=2(input).pkl"
+signal_file_NN_outputP2 = "x_rrcf_RappNN_P=2.pkl"
+
+# p = 3
+signal_file_NN_inputP3="x_rrcf_signals_trained_NN_conv_P=3(input).pkl"
+signal_file_NN_outputP3 = "x_rrcf_RappNN_P=3.pkl"
 
 #Baseline: 
 
-with open(signal_file_baseline, "rb") as f:
-    Baseline_loaded_signals = pickle.load(f)
+with open(signal_file_baseline_inputP1, "rb") as f:
+    Baseline_input_signalsP1 = pickle.load(f)
 
-with open(signal_file_baseline_noisy1, "rb") as f:
-    Baseline_noisy_signals_p1 = pickle.load(f)
+with open(signal_file_baseline_outputP1, "rb") as f:
+    Baseline_output_signals_p1 = pickle.load(f)
+
+    
+with open(signal_file_baseline_inputP2, "rb") as f:
+    Baseline_input_signalsP2 = pickle.load(f)
+
+with open(signal_file_baseline_outputP2, "rb") as f:
+    Baseline_output_signals_p2 = pickle.load(f)
+
+with open(signal_file_baseline_inputP3, "rb") as f:
+    Baseline_input_signalsP3 = pickle.load(f)
+
+with open(signal_file_baseline_outputP3, "rb") as f:
+    Baseline_output_signals_p3 = pickle.load(f)
 
 with open(signal_file_baseline_new, "rb") as f:
     Baseline_Input = pickle.load(f)
@@ -44,6 +90,31 @@ with open(signal_file_baseline_output, "rb") as f:
     Baseline_Output = pickle.load(f)
 
 
+## NN
+with open(signal_file_NN_input, "rb") as f:
+    NN_Input = pickle.load(f)
+
+with open(signal_file_NN_output, "rb") as f:
+   NN_Output = pickle.load(f)
+
+
+with open(signal_file_NN_inputP1, "rb") as f:
+    NN_InputP1 = pickle.load(f)
+
+with open(signal_file_NN_outputP1, "rb") as f:
+   NN_OutputP1 = pickle.load(f)
+
+with open(signal_file_NN_inputP2, "rb") as f:
+    NN_InputP2 = pickle.load(f)
+
+with open(signal_file_NN_outputP2, "rb") as f:
+   NN_OutputP2 = pickle.load(f)
+
+with open(signal_file_NN_inputP3, "rb") as f:
+    NN_InputP3 = pickle.load(f)
+
+with open(signal_file_NN_outputP3, "rb") as f:
+   NN_OutputP3= pickle.load(f)
 
 
 
@@ -60,14 +131,46 @@ with open(signal_file_baseline_output, "rb") as f:
 #     #NNloaded_signals_noisy_RAPP_p1, NNloaded_signals_noisy_RAPP_p3
 # ]
 
+       # Normalize transmit power to 1 Watt per batch
+        # power_per_batch = tf.reduce_mean(tf.abs(x_rrcf)**2, axis=1, keepdims=True)
+        # scaling_factor = tf.sqrt(1.0 / power_per_batch)
+        # scaling_factor=tf.cast(scaling_factor,tf.complex64)
+        # x_rrcf = x_rrcf * scaling_factor
+# power_per_batch_In = tf.reduce_mean(tf.abs(Baseline_Input[9])**2, axis=1, keepdims=True)
+# power_per_batch_Out = tf.reduce_mean(tf.abs(Baseline_Output[9])**2, axis=1, keepdims=True)
+# scaling_factor_In = tf.sqrt(1.0 / power_per_batch_In)
+# scaling_factor_In=tf.cast(scaling_factor_In,tf.complex64)
 
-inputP , outputP = Pout_Pin_Power(Baseline_Input[9],Baseline_Output[9])
-print("Sahpe is",Baseline_Input[9].shape)
+# scaling_factor_Out = tf.sqrt(1.0 / power_per_batch_Out)
+# scaling_factor_Out=tf.cast(scaling_factor_Out,tf.complex64)
+
+
+# inputP , outputP = Pout_Pin_Power(Baseline_Input[9]*scaling_factor_In,Baseline_Output[9]*scaling_factor_Out)
+# inputP , outputP = Pout_Pin_Power(Baseline_Input[9],Baseline_Output[9])
+# plt.plot(inputP,  outputP, alpha=0.5, label="BL no RAPP")
+# inputP , outputP = Pout_Pin_Power(Baseline_input_signalsP1[9],Baseline_output_signals_p1[9])
+# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, P=1")
+# inputP , outputP = Pout_Pin_Power(Baseline_input_signalsP2[9],Baseline_output_signals_p2[9])
+# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, P=2")
+# inputP , outputP = Pout_Pin_Power(Baseline_input_signalsP3[9],Baseline_output_signals_p3[9])
+# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, P=3")
+inputP , outputP = Pout_Pin_Power(NN_Input[9],NN_Output[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E no RAPP")
+
+inputP , outputP = Pout_Pin_Power(NN_InputP1[9],NN_OutputP1[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP,P=1")
+
+inputP , outputP = Pout_Pin_Power(NN_InputP2[9],NN_OutputP2[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP,P=2")
+
+inputP , outputP = Pout_Pin_Power(NN_InputP3[9],NN_OutputP3[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP,P=3")
+#print("Sahpe is",Baseline_Input[9].shape)
 # plt.plot(10 * np.log10(inputP),  10 * np.log10(outputP), alpha=0.5, label="RAPP P=1")
 # inputP , outputP = Pout_Pin_Power(Baseline_loaded_signals[9],Baseline_noisy_signals_p3[9])
 # plt.plot(10 * np.log10(inputP),  10 * np.log10(outputP), alpha=0.5, label="RAPP P=3")
 # inputP , outputP = Pout_Pin_Power(Baseline_loaded_signals[9],Baseline_noisy_signals_p1[9])
-plt.plot(inputP,  outputP, alpha=0.5, label="BL no RAPP")
+
 # inputP , outputP = Pout_Pin_Power(Baseline_loaded_signals[9],Baseline_noisy_signals_p3[9])
 # plt.plot(inputP,  outputP, alpha=0.5, label="RAPP P=3")
 
