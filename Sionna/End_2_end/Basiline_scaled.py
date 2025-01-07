@@ -91,7 +91,7 @@ alpha_pn = [1.0,2.95]
 
 #Other parametes:
 
-BATCH_SIZE = 128#10 #how many examples are processed by sionna in parallel 
+BATCH_SIZE =128#10 #how many examples are processed by sionna in parallel 
 
 # Dictionary to store both BER and BLER results for each model
 results_baseline = {
@@ -170,6 +170,10 @@ class Baseline(Model): # Inherits from Keras Model
         self.encoder = LDPC5GEncoder(k,n, num_bits_per_symbol) #pass no of info bits and lenght of the codeword, and bits per symbol
         self.interleaver = RandomInterleaver() 
         self.constellation = Constellation("qam", num_bits_per_symbol)
+        # Normalize constellation power to 1 Watt
+        # average_power = tf.reduce_mean(tf.abs(self.constellation.points)**2)
+        # scaling_factor = tf.sqrt(1.0 / average_power)
+        # self.constellation.points = self.constellation.points * scaling_factor
         self.mapper = Mapper(constellation=self.constellation)
 
         ########################################
@@ -193,7 +197,7 @@ class Baseline(Model): # Inherits from Keras Model
         # Create instance of the Upsampling layer
         self.us = Upsampling(samples_per_symbol)
         #initialize the transmit filtrer 
-        self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta)
+        self.rrcf = RootRaisedCosineFilter(span_in_symbols, samples_per_symbol, beta, normalize = True)
         # Instantiate a downsampling layer
         self.ds = Downsampling(samples_per_symbol, self.rrcf.length-1, lenght_of_block) #offset due to group delay
 
@@ -219,34 +223,21 @@ class Baseline(Model): # Inherits from Keras Model
         # Non linear noise - Rapp model 
         ########################################
         self.RappModel = RappPowerAmplifier(
-            saturation_amplitude = 1,
-            smoothness_factor = 3
+            saturation_amplitude = 1.2,
+            smoothness_factor = 100
         )
 
     
-        ########################################
-        # Phase noise 
-        ########################################
-        self.phase_noise = PhaseNoise(
-            PSD0_dB = -72, #dB
-            f_carrier = 120e9,
-            f_ref = 20e9,
-            fz = [3e4, 1.75e7],
-            fp = [10, 3e5],
-            alpha_zn = [1.4,2.55],
-            alpha_pn = [1.0,2.95]
-        )
-
-        #########################################
-        # Phase noise compensator 
-        #########################################
-        self.phase_compensator = PhaseNoiseCompensator(Nzc_PTRS)
 
     @tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
+        
         uncoded_bits = self.binary_source([batch_size, k]) 
+        #normalize to unit energy 
+        #uncoded_bits = uncoded_bits / tf.sqrt(tf.reduce_mean(tf.abs(uncoded_bits)**2))
+
         #############################
         # Transmit
         #############################
@@ -254,15 +245,7 @@ class Baseline(Model): # Inherits from Keras Model
         bits_e = self.encoder(uncoded_bits)
         bits_i = self.interleaver(bits_e)
         x = self.mapper(bits_i)
-        #############################
-        # PTRS pilots 
-        #############################
-        
-        #x_PTRS, transmitted_ptrs = self.PTRS.add_ptrs_to_blocks(x)
-        
-
-        #Add cyclic prefix 
-        #x_with_cp = self.cp.add_cp(x_PTRS)
+    
         
         ############################
         #Filter and sampling
@@ -272,118 +255,59 @@ class Baseline(Model): # Inherits from Keras Model
         #Filter the upsampled sequence 
         x_rrcf = self.rrcf(x_us)
        
+        #scale 
+        scaling_factor = tf.sqrt(tf.reduce_mean(tf.abs(x_rrcf)**2))  # Compute current signal energy
+        x_rrcf = x_rrcf / tf.cast(tf.sqrt(tf.reduce_mean(tf.abs(x_rrcf)**2)), dtype=x_rrcf.dtype)
+
    
         #############################
-        #Rapp noise addition 
-        ###########################
-        # Normalize transmit power to 1 Watt per batch
-        # power_per_batch = tf.reduce_mean(tf.abs(x_rrcf)**2, axis=1, keepdims=True)
-        # scaling_factor = tf.sqrt(1.0 / power_per_batch)
-        # scaling_factor=tf.cast(scaling_factor,tf.complex64)
-        # x_rrcf = x_rrcf * scaling_factor
+        #Rapp noise addition x_rrcf
+ 
 
-        x_rrcf_Rapp = self.RappModel(x_rrcf)
+        x_rrcf_Rapp_scaled = self.RappModel(x_rrcf)
 
-        # Normalize the power after Rapp model
-        # power_per_batch_rapp = tf.reduce_mean(tf.abs(x_rrcf_Rapp)**2, axis=1, keepdims=True)
-        # scaling_factor_rapp = tf.sqrt(1.0 / power_per_batch_rapp)
-        # scaling_factor_rapp = tf.cast(scaling_factor_rapp, tf.complex64)
-        # x_rrcf_Rapp_normalized = x_rrcf_Rapp * scaling_factor_rapp
-        # #x_rrcf = x_rrcf/scaling_factor
-         # Inverse scaling factor
-        # scaling_factor_inv = tf.cast(scaling_factor_inv, tf.complex64)
-        # Normalize output signal to 1 Watt
-        #desired_power = 1.0
-     
-
-        #tf.print("Shape of x_rrcf_Rapp is:", tf.shape(x_rrcf_Rapp))
-        #tf.print("ACLR is (db)",10*np.log10(self.rrcf.aclr))
-        # tf.print("Type of rrcf:", type(self.rrcf))
-        # tf.print("Attributes of rrcf:", dir(self.rrcf))
-        ############################
-        # PAPR constraint 
-        ############################
-        #x_rrcf = enforce_PAPR_Constraints(x_rrcf,5.5)
-        
-        # Store only constellation data after mapping
-        # Append ebno_db and constellation data as tuple to list
-        # constellation_data_list.append((float(ebno_db), x))
-
-        ############################
-        #Phase noise - transmitter 
-        ###########################
-        # # Print the PSD values
-        # sampling_rate = int(samples_per_symbol * 1 / (span_in_symbols / f_carrier))  # Dynamic sampling rate
-        # num_samples = tf.shape(x_rrcf)[-1]
-        # num_samples = tf.cast(num_samples, tf.int32)#.numpy()  # Convert to integer
-        # phase_noise_samples_single = self.phase_noise.generate_phase_noise(num_samples, sampling_rate)
-        # # Expand phase noise to cover all batches
-    
-        
-        # phase_noise_samples = tf.tile(
-        #     tf.expand_dims(phase_noise_samples_single, axis=0), [batch_size, 1]
-        #     )  # Shape: [batch_size, num_samples]
-           
-      
-        # # Convert phase_noise_samples to complex type
-        # phase_noise_complex = tf.exp(
-        #     tf.cast(1j, tf.complex64) * tf.cast(phase_noise_samples, tf.complex64)
-        #     )  # Convert to complex64 phase noise
-        # x_rrcf = x_rrcf * phase_noise_complex  # Apply phase noise
-
+        #xrrcf = x_rrcf * tf.cast(noise_scaling_factor, dtype= x_rrcf.dtype)
+        x_rrcf_Rapp = x_rrcf_Rapp_scaled * tf.cast(scaling_factor, dtype= x_rrcf_Rapp_scaled.dtype)
         ##############################
         # Channel 
         ##############################
         # scaling_factor =tf.cast(scaling_factor,tf.float32)
         # no = no * scaling_factor  # Scale noise power
-        y = self.awgn_channel([x_rrcf_Rapp, no])
-        # scaling_factor_inv = tf.pow(power_per_batch,2)  # Inverse scaling factor
-        # scaling_factor_inv = tf.cast(scaling_factor_inv, tf.complex64)
-        # y = y * scaling_factor_inv
+
+        # Adjust noise power for scaling
+        
+        #no = no * tf.cast(noise_scaling_factor, dtype=no.dtype)  # Scale noise power appropriately
+        y = self.awgn_channel([x_rrcf_Rapp, no]) 
+     
         ############################
         #matched filter, downsampling 
         ############################
-        # scaling_factor =tf.cast(scaling_factor,tf.complex64)
-        # y = y/scaling_factor
-        y_mf = self.rrcf(y)#, padding = "full")
+        #scale channel down 
+        #y = y * tf.cast(noise_scaling_factor, dtype=y.dtype)
+        y_mf = self.rrcf(y)
+        #y_mf = y_mf * tf.cast(noise_scaling_factor, dtype=y_mf.dtype)
+        #Normalize 
+        #y_mf = y_mf / tf.cast(tf.sqrt(tf.reduce_mean(tf.abs(y_mf)**2)), dtype=y_mf.dtype)
         ##y_mf = self.rrcf(y)
         y_ds = self.ds(y_mf) #downsample sequence
         # ############################
         # Receive 
         ############################
-        #Remove CP 
-        #y_ds_no_cp = self.cp.remove_cp(y_ds)
-        
-        ###########################
-        # PN compensation 
-        ###########################
-        #extract received PTRS 
-        #received_blocks = tf.split(y_ds_no_cp, self.PTRS.Q, axis=1)
-        
-        # received_ptrs = tf.stack(
-        # [block[:, :self.PTRS.Nzc_PTRS] for block in received_blocks],
-        # axis=1
-        #     )  # Shape: [batch_size, Q, Nzc_PTRS]
-        
-
-        # phase_error = self.phase_compensator.calculate_phase_error(received_ptrs, transmitted_ptrs)
-        
-        # interpolated_phase_error = self.phase_compensator.interpolate_phase_error(phase_error, tf.shape(y_ds_no_cp)[-1])
-        
-        # y_compensated = self.phase_compensator.compensate_phase_noise(y_ds_no_cp, interpolated_phase_error)
-        
-
-        # data_only_signal = self.phase_compensator.remove_ptrs_from_signal(y_compensated, Nzc_PTRS, Q, num_symbols_per_codeword)
+    
         
         llr_ch = self.demapper([y_ds,no])
         #llr_rsh = tf.reshape(llr_ch, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         llr_de = self.deinterlever(llr_ch)
+
+
  
         llr_de = tf.reshape(llr_de, [batch_size, n]) #Needs to be reshaped to match decoders expected inpt 
         decoded_bits = self.decoder(llr_de)
+        
+        #decoded_bits = decoded_bits / tf.cast(tf.sqrt(tf.reduce_mean(tf.abs(decoded_bits)**2)), dtype=decoded_bits.dtype)
 
 
-        return uncoded_bits, decoded_bits, x_rrcf,x_rrcf_Rapp, x, y_ds
+        return uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp_scaled, x, x_us, y_mf,no, y
 
 
 
@@ -408,14 +332,27 @@ selected_ebno_dbs = [9]  # Adjust as needed
 for ebno_db in selected_ebno_dbs:
     # Forward pass through the model
     print(f"Starting evaluation for Eb/N0 = {ebno_db} dB...")  # Print current Eb/N0
-    uncoded_bits, decoded_bits, x_rrcf, x_rrcf_Rapp, x, y_ds = model(BATCH_SIZE, ebno_db)
+    uncoded_bits, decoded_bits, x_rrcf,x_rrcf_Rapp, x, x_us, y_mf, no, y = model(BATCH_SIZE, ebno_db)
     
     # Save the `x_rrcf` signal (post-PAPR enforcement)
     # Assuming `x_rrcf` is stored in the model during the forward pass
+    noise_power = tf.reduce_mean(tf.abs(no)**2)
+    # Print shapes of uncoded and decoded bits
+    print(f"Shape of Uncoded Bits: {uncoded_bits.shape}")
+    print(f"Shape of Decoded Bits: {decoded_bits.shape}")
+    print(f"Noise Power (N0): {no}")
+    # Print data types of uncoded and decoded bits
+    print(f"Data Type of Uncoded Bits: {uncoded_bits.dtype}")
+    print(f"Data Type of Decoded Bits: {decoded_bits.dtype}")
+    received_energy = tf.reduce_mean(tf.abs(y_mf)**2).numpy()
+    print(f"Received Signal Energy After Matched Filter: {received_energy}")
+    transmit_energy = tf.reduce_mean(tf.abs(x_rrcf)**2).numpy()
+    print(f"transmit Signal Energy After Matched Filter: {transmit_energy}")
     x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
     x_rrcf_Rapp_signals[ebno_db] = x_rrcf_Rapp
-    bits_after_mapper[ebno_db] = x
-    bits_before_demapper[ebno_db] = y_ds
+    bits_after_mapper[ebno_db] = x_us
+
+    #bits_before_demapper[ebno_db] = y_ds
 
 
 # print("All selected Eb/N0 evaluations completed.")
@@ -429,15 +366,15 @@ for ebno_db in selected_ebno_dbs:
 
 
 
-# ber_NN, bler_NN = sim_ber(
-#     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
-#     #soft estimates added for demapping 
-# results_baseline['BLER']['baseline'] = bler_NN.numpy()
-# results_baseline['BER']['baseline'] = ber_NN.numpy()
+ber_BL, bler_BL = sim_ber(
+    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
+    #soft estimates added for demapping 
+results_baseline['BLER']['baseline'] = bler_BL.numpy()
+results_baseline['BER']['baseline'] = ber_BL.numpy()
 
-# # Save the results to a file (optional)
-# with open("bler_results_baseline_NEW_.pkl", 'wb') as f:
-#     pickle.dump(results_baseline, f)
+#Save the results to a file (optional)
+with open("bler_results_baseline_NEW_scaled_.pkl", 'wb') as f:
+    pickle.dump(results_baseline, f)
 
 
 # Save the x_rrcf signals to a file (as NumPy or TF tensors)
