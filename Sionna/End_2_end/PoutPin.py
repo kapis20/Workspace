@@ -64,16 +64,34 @@ signal_file_NN_outputP3 = "x_rrcf_RappNN_P=3.pkl"
 
 
 ##
-signal_file_baseline_inputP1_scaled="x_rrcf_signals_baseline_scaled_inputP=3.pkl"
-signal_file_baseline_outputP1_scaled = "x_rrcf_BL_scaled_Rapp_outputP=3.pkl"
+signal_file_baseline_inputV15_scaled="x_rrcf_signals_baseline_scaled_inputVs_1_5.pkl"
+signal_file_baseline_outputV15_scaled = "x_rrcf_BL_scaled_Rapp_outputVs_1_5.pkl"
+
+signal_file_baseline_inputV1_25_scaled="x_rrcf_signals_baseline_scaled_inputVs_1_25.pkl"
+signal_file_baseline_outputV1_25_scaled = "x_rrcf_BL_scaled_Rapp_outputVs_1_25.pkl"
+
+signal_file_baseline_inputV1_scaled="x_rrcf_signals_baseline_scaled_inputVs_1.pkl"
+signal_file_baseline_outputV1_scaled = "x_rrcf_BL_scaled_Rapp_outputVs_1.pkl"
 
 
-with open(signal_file_baseline_inputP1_scaled, "rb") as f:
-    Baseline_input_signalsP1_scaled = pickle.load(f)
 
-with open(signal_file_baseline_outputP1_scaled, "rb") as f:
-    Baseline_output_signals_p1_scaled = pickle.load(f)
+with open(signal_file_baseline_inputV15_scaled, "rb") as f:
+    Baseline_input_signalsV15_scaled = pickle.load(f)
 
+with open(signal_file_baseline_outputV15_scaled, "rb") as f:
+    Baseline_output_signals_V15_scaled = pickle.load(f)
+
+with open(signal_file_baseline_inputV1_25_scaled, "rb") as f:
+    Baseline_input_signalsV1_25_scaled = pickle.load(f)
+
+with open(signal_file_baseline_outputV1_25_scaled, "rb") as f:
+    Baseline_output_signals_V1_25_scaled = pickle.load(f)
+
+with open(signal_file_baseline_inputV1_scaled, "rb") as f:
+    Baseline_input_signalsV1_scaled = pickle.load(f)
+
+with open(signal_file_baseline_outputV1_scaled, "rb") as f:
+    Baseline_output_signals_V1_scaled = pickle.load(f)
 
 #Baseline: 
 
@@ -180,9 +198,12 @@ with open(signal_file_NN_outputP3, "rb") as f:
 # plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP,P=3")
 #print("shape of signal in is"):
 
-inputP , outputP = Pout_Pin_Power(Baseline_input_signalsP1_scaled[9],Baseline_output_signals_p1_scaled[9])
-plt.plot(inputP,  outputP, alpha=0.5, label="test")
-
+inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV15_scaled[9],Baseline_output_signals_V15_scaled[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.5,p=100")
+inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_25_scaled[9],Baseline_output_signals_V1_25_scaled[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.25,p=100")
+inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_scaled[9],Baseline_output_signals_V1_scaled[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1,p=100")
 
 # #print("Sahpe is",Baseline_Input[9].shape)
 # plt.plot(10 * np.log10(inputP),  10 * np.log10(outputP), alpha=0.5, label="RAPP P=1")
