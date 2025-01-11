@@ -1,7 +1,5 @@
 import tensorflow as tf
-#PAraeters 
-# Smoothing factor = 2
-# saturtion amp = 1.2
+
 
 class RappPowerAmplifier:
     """Model of a power amplifier according to Rapp's model for TensorFlow tensors."""

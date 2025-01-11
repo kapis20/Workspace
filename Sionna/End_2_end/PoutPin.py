@@ -9,15 +9,7 @@ def Pout_Pin_Power(inputSig, outputSig):
     #Normalized
     power_per_batch_In = tf.reduce_mean(tf.abs(inputSig)**2, axis=1, keepdims=True)
     power_per_batch_Out = tf.reduce_mean(tf.abs(outputSig)**2, axis=1, keepdims=True)
-    # scaling_factor_In = tf.sqrt(1.0 / power_per_batch_In)
-    # scaling_factor_In=tf.cast(scaling_factor_In,tf.complex64)
-
-    # scaling_factor_Out = tf.sqrt(1.0 / power_per_batch_Out)
-    # scaling_factor_Out=tf.cast(scaling_factor_Out,tf.complex64)
-
-    # inputSig = inputSig*scaling_factor_In
-    # outputSig =outputSig*scaling_factor_Out
-
+  
     inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
     outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
 
