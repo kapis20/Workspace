@@ -4,7 +4,7 @@ import tensorflow as tf
 class RappPowerAmplifier:
     """Model of a power amplifier according to Rapp's model for TensorFlow tensors."""
 
-    def __init__(self, saturation_amplitude: float, smoothness_factor: float = 1.0):
+    def __init__(self, saturation_amplitude: float, smoothness_factor: float = 1.0, voltage_gain: float =19.0):
         """
         Args:
             saturation_amplitude (float): Maximum amplitude before saturation occurs.
@@ -15,6 +15,7 @@ class RappPowerAmplifier:
             raise ValueError("Smoothness factor must be greater than zero.")
         self.saturation_amplitude = saturation_amplitude
         self.smoothness_factor = smoothness_factor
+        self.voltage_gain = voltage_gain
     #__call__ makes sure you can call it in other scripts 
     def __call__(self, input_signal: tf.Tensor) -> tf.Tensor:
         """
@@ -28,9 +29,10 @@ class RappPowerAmplifier:
         """
         p = self.smoothness_factor
         amplitude = tf.abs(input_signal)
-        gain = tf.pow(1 + tf.pow(amplitude / self.saturation_amplitude, 2 * p), 1 / (2 * p))
+        gain = tf.pow(1 + tf.pow((self.voltage_gain*amplitude) / self.saturation_amplitude, 2 * p), 1 / (2 * p))
+        gain = self.voltage_gain*amplitude / gain
         # Convert gain to complex64 to match input_signal
         gain = tf.cast(gain, dtype=input_signal.dtype)
 
-        return input_signal / gain
+        return input_signal * gain
 
