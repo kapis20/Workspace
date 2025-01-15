@@ -256,6 +256,7 @@ class Baseline(Model): # Inherits from Keras Model
         x_rrcf = self.rrcf(x_us)
        
         #scale 
+        x_rrcf= x_rrcf/ tf.cast(tf.sqrt((tf.abs(tf.reduce_mean(x_rrcf, axis =0)))**2),dtype =x_rrcf.dtype)
         # scaling_factor = tf.sqrt((tf.reduce_mean(tf.abs(x_rrcf),axis = 0))**2)  # Compute current signal energy
         # x_rrcf = x_rrcf / tf.cast( tf.sqrt((tf.reduce_mean(tf.abs(x_rrcf),axis = 0))**2), dtype=x_rrcf.dtype)
 
