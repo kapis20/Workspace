@@ -7,11 +7,16 @@ import pickle
 def Pout_Pin_Power(inputSig, outputSig):
    
     #Normalized
-    power_per_batch_In = tf.reduce_mean(tf.abs(inputSig)**2, axis=1, keepdims=True)
-    power_per_batch_Out = tf.reduce_mean(tf.abs(outputSig)**2, axis=1, keepdims=True)
+    # inputPower = tf.reduce_mean(tf.abs(inputSig)**2, axis=0, keepdims=True)
+    # outputPower = tf.reduce_mean(tf.abs(outputSig)**2, axis=0, keepdims=True)
+    # inputPower = (tf.reduce_mean(tf.abs(inputSig), axis=0))**2
+    # outputPower =(tf.reduce_mean(tf.abs(outputSig), axis=0))**2
+
+    inputPower = (tf.abs(tf.reduce_mean(inputSig, axis =0)))**2
+    outputPower =(tf.abs(tf.reduce_mean(outputSig, axis=0)))**2
   
-    inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
-    outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
+    # inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
+    # outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
 
    
 
@@ -65,6 +70,16 @@ signal_file_baseline_outputV1_25_scaled = "x_rrcf_BL_scaled_Rapp_outputVs_1_25.p
 signal_file_baseline_inputV1_scaled="x_rrcf_signals_baseline_scaled_inputVs_1.pkl"
 signal_file_baseline_outputV1_scaled = "x_rrcf_BL_scaled_Rapp_outputVs_1.pkl"
 
+signal_file_baseline_input_scaled="x_rrcf_signals_baseline_scaled_input.pkl"
+signal_file_baseline_output_scaled = "x_rrcf_BL_scaled_output.pkl"
+
+
+
+with open(signal_file_baseline_input_scaled, "rb") as f:
+    Baseline_input_signal_scaled = pickle.load(f)
+
+with open(signal_file_baseline_output_scaled, "rb") as f:
+    Baseline_output_signal_scaled = pickle.load(f)
 
 
 with open(signal_file_baseline_inputV15_scaled, "rb") as f:
@@ -190,12 +205,49 @@ with open(signal_file_NN_outputP3, "rb") as f:
 # plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP,P=3")
 #print("shape of signal in is"):
 
-inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV15_scaled[9],Baseline_output_signals_V15_scaled[9])
-plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.5,p=100")
-inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_25_scaled[9],Baseline_output_signals_V1_25_scaled[9])
-plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.25,p=100")
-inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_scaled[9],Baseline_output_signals_V1_scaled[9])
-plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1,p=100")
+
+
+##############################################
+# Scaled
+##############################################
+
+##############################################
+# Input vs output magnitude 
+##############################################
+tf.print("shape of input is: ",tf.shape(Baseline_input_signal_scaled[9]))
+#average across columns (0)
+# magnitudes = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9]),axis = 0)
+# magnitudes_out = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9]),axis = 0)
+magnitudes = tf.abs(tf.reduce_mean(Baseline_input_signal_scaled[9], axis =0))
+magnitudes_out = tf.abs(tf.reduce_mean(Baseline_output_signal_scaled[9], axis = 0))
+tf.print("shape of magnitudes is: ",tf.shape(magnitudes))
+# Plot the magnitude
+plt.figure(figsize=(10, 6))
+plt.plot(magnitudes.numpy(), label='Input magnitude')
+plt.plot(magnitudes_out.numpy(), label='Output magnitude')
+plt.title('Magnitude of Complex Signal (not scaled)')
+plt.xlabel('Sample Index')
+plt.ylabel('Magnitude')
+plt.grid(True)
+plt.legend()
+plt.show()
+
+inputP , outputP = Pout_Pin_Power(Baseline_input_signal_scaled[9],Baseline_output_signal_scaled[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=100")
+
+plt.xlabel("Input Power")
+plt.ylabel("Output Power")
+plt.title("Output Power vs Input Power (not scaled)")
+plt.legend()
+plt.grid()
+plt.show()
+
+# inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV15_scaled[9],Baseline_output_signals_V15_scaled[9])
+# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.5,p=100")
+# inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_25_scaled[9],Baseline_output_signals_V1_25_scaled[9])
+# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.25,p=100")
+# inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_scaled[9],Baseline_output_signals_V1_scaled[9])
+# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1,p=100")
 
 # #print("Sahpe is",Baseline_Input[9].shape)
 # plt.plot(10 * np.log10(inputP),  10 * np.log10(outputP), alpha=0.5, label="RAPP P=1")
@@ -208,9 +260,9 @@ plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1,p=100")
 
 
 
-plt.xlabel("Input Power")
-plt.ylabel("Output Power")
-plt.title("Output Power vs Input Power")
-plt.legend()
-plt.grid()
-plt.show()
+# plt.xlabel("Input Power")
+# plt.ylabel("Output Power")
+# plt.title("Output Power vs Input Power")
+# plt.legend()
+# plt.grid()
+# plt.show()
