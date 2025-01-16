@@ -216,10 +216,10 @@ with open(signal_file_NN_outputP3, "rb") as f:
 ##############################################
 tf.print("shape of input is: ",tf.shape(Baseline_input_signal_scaled[9]))
 #average across columns (0)
-# magnitudes = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9]),axis = 0)
-# magnitudes_out = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9]),axis = 0)
-magnitudes = tf.abs(tf.reduce_mean(Baseline_input_signal_scaled[9], axis =0))
-magnitudes_out = tf.abs(tf.reduce_mean(Baseline_output_signal_scaled[9], axis = 0))
+magnitudes = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9]),axis = 1)
+magnitudes_out = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9]),axis = 1)
+# magnitudes = tf.abs(tf.reduce_mean(Baseline_input_signal_scaled[9], axis =0))
+# magnitudes_out = tf.abs(tf.reduce_mean(Baseline_output_signal_scaled[9], axis = 0))
 tf.print("shape of magnitudes is: ",tf.shape(magnitudes))
 # Plot the magnitude
 plt.figure(figsize=(10, 6))
@@ -232,7 +232,7 @@ plt.grid(True)
 plt.legend()
 plt.show()
 
-inputP , outputP = Pout_Pin_Power(Baseline_input_signal_scaled[9],Baseline_output_signal_scaled[9])
+inputP , outputP = Pout_Pin_Power(Baseline_input_signal_scaled[9],Baseline_input_signal_scaled[9])
 plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=100")
 
 plt.xlabel("Input Power")
