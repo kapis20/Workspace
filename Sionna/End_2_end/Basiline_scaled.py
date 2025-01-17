@@ -224,7 +224,7 @@ class Baseline(Model): # Inherits from Keras Model
         ########################################
         self.RappModel = RappPowerAmplifier(
             saturation_amplitude = 1.0,
-            smoothness_factor = 100
+            smoothness_factor = 1
         )
 
     

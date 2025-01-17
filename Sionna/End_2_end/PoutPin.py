@@ -12,9 +12,13 @@ def Pout_Pin_Power(inputSig, outputSig):
     # inputPower = (tf.reduce_mean(tf.abs(inputSig), axis=0))**2
     # outputPower =(tf.reduce_mean(tf.abs(outputSig), axis=0))**2
 
-    inputPower = (tf.abs(tf.reduce_mean(inputSig, axis =0)))**2
-    outputPower =(tf.abs(tf.reduce_mean(outputSig, axis=0)))**2
-  
+    # inputPower = (tf.abs(tf.reduce_mean(inputSig, axis =0)))**2
+    # outputPower =(tf.abs(tf.reduce_mean(outputSig, axis=0)))**2
+    inputPower = tf.reduce_mean(tf.abs(inputSig)**2, axis=0)  # Mean power across time/sample axis
+    outputPower = tf.reduce_mean(tf.abs(outputSig)**2, axis=0)
+    #Convert to dB
+    inputPower = tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
+    outputPower = tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
     # inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
     # outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
 
@@ -216,8 +220,8 @@ with open(signal_file_NN_outputP3, "rb") as f:
 ##############################################
 tf.print("shape of input is: ",tf.shape(Baseline_input_signal_scaled[9]))
 #average across columns (0)
-magnitudes = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9]),axis = 1)
-magnitudes_out = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9]),axis = 1)
+magnitudes = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9]),axis = 0)
+magnitudes_out = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9]),axis = 0)
 # magnitudes = tf.abs(tf.reduce_mean(Baseline_input_signal_scaled[9], axis =0))
 # magnitudes_out = tf.abs(tf.reduce_mean(Baseline_output_signal_scaled[9], axis = 0))
 tf.print("shape of magnitudes is: ",tf.shape(magnitudes))
@@ -232,11 +236,11 @@ plt.grid(True)
 plt.legend()
 plt.show()
 
-inputP , outputP = Pout_Pin_Power(Baseline_input_signal_scaled[9],Baseline_input_signal_scaled[9])
-plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=100")
+inputP , outputP = Pout_Pin_Power(Baseline_input_signal_scaled[9],Baseline_output_signal_scaled[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=1")
 
-plt.xlabel("Input Power")
-plt.ylabel("Output Power")
+plt.xlabel("Input Power (dB)")
+plt.ylabel("Output Power (dB)")
 plt.title("Output Power vs Input Power (not scaled)")
 plt.legend()
 plt.grid()
