@@ -35,3 +35,4 @@ class RappPowerAmplifier:
         gain = tf.cast(gain, dtype=input_signal.dtype)
 
         return input_signal / gain
+

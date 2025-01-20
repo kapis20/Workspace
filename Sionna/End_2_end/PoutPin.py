@@ -27,6 +27,21 @@ def Pout_Pin_Power(inputSig, outputSig):
     return inputPower, outputPower
 
 
+def Pout_Pin_PowerSingleBatch(inputSig, outputSig):
+   
+  
+    inputPower = tf.abs(inputSig)**2  # Mean power across time/sample axis
+    outputPower = tf.abs(outputSig)**2
+    #Convert to dB
+    inputPower = tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
+    outputPower = tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
+    # inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
+    # outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
+
+   
+
+    return inputPower, outputPower
+
 #baseline model:
 # File to save the signals
 #signal_file_noisy = "x_rrcf_Rapp.pkl"
@@ -219,25 +234,61 @@ with open(signal_file_NN_outputP3, "rb") as f:
 # Input vs output magnitude 
 ##############################################
 tf.print("shape of input is: ",tf.shape(Baseline_input_signal_scaled[9]))
+
+signalIn = Baseline_input_signal_scaled[9]
+signalOut =Baseline_output_signal_scaled[9]
+
+signalIn = signalIn[0,:]
+signalOut = signalOut[0,:]
+
+Powerin = tf.abs(signalIn)**2  
+Powerout = tf.abs(signalOut)**2
+
+RMSin = tf.sqrt(Powerin)
+RMSOut = tf.sqrt(Powerout)
+
+Normalizedin = signalIn/RMSin
+Normalizedout = signalOut/RMSOut
+tf.print("shape of input normalized is: ",tf.shape(Normalizedin))
+
+
 #average across columns (0)
-magnitudes = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9]),axis = 0)
-magnitudes_out = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9]),axis = 0)
+# Powerin = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9])**2, axis=0)  # Mean power across time/sample axis
+# Powerout = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9])**2, axis=0)
+
+# RMSin = tf.sqrt(Powerin)
+# RMSOut = tf.sqrt(Powerout)
+
+# Normalizedin = Baseline_input_signal_scaled[9]/RMSin
+# Normalizedout = Baseline_output_signal_scaled[9]/RMSOut
+# tf.print("shape of input normalized is: ",tf.shape(Normalizedin))
+
+magnitudes = tf.abs(Normalizedin)
+magnitudes_out = tf.abs(Normalizedout)
+
+# magnitudes = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9]),axis = 0)
+# magnitudes_out = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9]),axis = 0)
 # magnitudes = tf.abs(tf.reduce_mean(Baseline_input_signal_scaled[9], axis =0))
 # magnitudes_out = tf.abs(tf.reduce_mean(Baseline_output_signal_scaled[9], axis = 0))
 tf.print("shape of magnitudes is: ",tf.shape(magnitudes))
 # Plot the magnitude
+
 plt.figure(figsize=(10, 6))
-plt.plot(magnitudes.numpy(), label='Input magnitude')
+#plt.plot(magnitudes.numpy(), label='Input magnitude')
 plt.plot(magnitudes_out.numpy(), label='Output magnitude')
-plt.title('Magnitude of Complex Signal (not scaled)')
+plt.title('Magnitude of Complex Signal (normalized)')
 plt.xlabel('Sample Index')
 plt.ylabel('Magnitude')
 plt.grid(True)
 plt.legend()
 plt.show()
+# inputP , outputP = Pout_Pin_Power(Normalizedin,Normalizedout)
+# #inputP , outputP = Pout_Pin_Power(Baseline_input_signal_scaled[9],Baseline_output_signal_scaled[9])
+# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=1")
 
-inputP , outputP = Pout_Pin_Power(Baseline_input_signal_scaled[9],Baseline_output_signal_scaled[9])
+inputP, outputP = Pout_Pin_PowerSingleBatch(Normalizedin,Normalizedout)
 plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=1")
+
 
 plt.xlabel("Input Power (dB)")
 plt.ylabel("Output Power (dB)")
