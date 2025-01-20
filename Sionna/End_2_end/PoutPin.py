@@ -33,8 +33,8 @@ def Pout_Pin_PowerSingleBatch(inputSig, outputSig):
     inputPower = tf.abs(inputSig)**2  # Mean power across time/sample axis
     outputPower = tf.abs(outputSig)**2
     #Convert to dB
-    inputPower = tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
-    outputPower = tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
+    # inputPower = tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
+    # outputPower = tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
     # inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
     # outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
 
@@ -241,15 +241,15 @@ signalOut =Baseline_output_signal_scaled[9]
 signalIn = signalIn[0,:]
 signalOut = signalOut[0,:]
 
-Powerin = tf.abs(signalIn)**2  
-Powerout = tf.abs(signalOut)**2
+# Powerin = tf.abs(signalIn)**2  
+# Powerout = tf.abs(signalOut)**2
 
-RMSin = tf.sqrt(Powerin)
-RMSOut = tf.sqrt(Powerout)
+# RMSin = tf.sqrt(Powerin)
+# RMSOut = tf.sqrt(Powerout)
 
-Normalizedin = signalIn/RMSin
-Normalizedout = signalOut/RMSOut
-tf.print("shape of input normalized is: ",tf.shape(Normalizedin))
+# Normalizedin = signalIn/RMSin
+# Normalizedout = signalOut/RMSOut
+# tf.print("shape of input normalized is: ",tf.shape(Normalizedin))
 
 
 #average across columns (0)
@@ -263,8 +263,8 @@ tf.print("shape of input normalized is: ",tf.shape(Normalizedin))
 # Normalizedout = Baseline_output_signal_scaled[9]/RMSOut
 # tf.print("shape of input normalized is: ",tf.shape(Normalizedin))
 
-magnitudes = tf.abs(Normalizedin)
-magnitudes_out = tf.abs(Normalizedout)
+magnitudes = tf.abs(signalIn)
+magnitudes_out = tf.abs(signalOut)
 
 # magnitudes = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9]),axis = 0)
 # magnitudes_out = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9]),axis = 0)
@@ -274,7 +274,7 @@ tf.print("shape of magnitudes is: ",tf.shape(magnitudes))
 # Plot the magnitude
 
 plt.figure(figsize=(10, 6))
-#plt.plot(magnitudes.numpy(), label='Input magnitude')
+plt.plot(magnitudes.numpy(), label='Input magnitude')
 plt.plot(magnitudes_out.numpy(), label='Output magnitude')
 plt.title('Magnitude of Complex Signal (normalized)')
 plt.xlabel('Sample Index')
@@ -286,13 +286,13 @@ plt.show()
 # #inputP , outputP = Pout_Pin_Power(Baseline_input_signal_scaled[9],Baseline_output_signal_scaled[9])
 # plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=1")
 
-inputP, outputP = Pout_Pin_PowerSingleBatch(Normalizedin,Normalizedout)
-plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=1")
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn,signalOut)
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 5.0,p=1")
 
 
-plt.xlabel("Input Power (dB)")
-plt.ylabel("Output Power (dB)")
-plt.title("Output Power vs Input Power (not scaled)")
+plt.xlabel("Input Power ")
+plt.ylabel("Output Power")
+plt.title("Output Power vs Input Power (scaled)")
 plt.legend()
 plt.grid()
 plt.show()

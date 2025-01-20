@@ -91,7 +91,7 @@ alpha_pn = [1.0,2.95]
 
 #Other parametes:
 
-BATCH_SIZE =128#10 #how many examples are processed by sionna in parallel 
+BATCH_SIZE =1#10 #how many examples are processed by sionna in parallel 
 
 # Dictionary to store both BER and BLER results for each model
 results_baseline = {
@@ -223,7 +223,7 @@ class Baseline(Model): # Inherits from Keras Model
         # Non linear noise - Rapp model 
         ########################################
         self.RappModel = RappPowerAmplifier(
-            saturation_amplitude = 1.0,
+            saturation_amplitude = 5.0,
             smoothness_factor = 1
         )
 
@@ -256,7 +256,13 @@ class Baseline(Model): # Inherits from Keras Model
         x_rrcf = self.rrcf(x_us)
         #x_rrcf = x_rrcf/ tf.cast(tf.sqrt(tf.reduce_mean((tf.abs(tf.reduce_mean(x_rrcf, axis =1)))**2)),dtype =x_rrcf.dtype)
         #scale 
+        x_rrcf = tf.abs(x_rrcf)**2  
 
+        RMSin = tf.sqrt(x_rrcf)
+       
+
+        x_rrcf = x_rrcf/RMSin
+      
         # scaling_factor = tf.sqrt((tf.reduce_mean(tf.abs(x_rrcf),axis = 0))**2)  # Compute current signal energy
         # x_rrcf = x_rrcf / tf.cast( tf.sqrt((tf.reduce_mean(tf.abs(x_rrcf),axis = 0))**2), dtype=x_rrcf.dtype)
 
@@ -264,7 +270,7 @@ class Baseline(Model): # Inherits from Keras Model
         # #############################
         # #Rapp noise addition x_rrcf
  
-
+        x_rrcf = tf.cast(x_rrcf, dtype=tf.complex64)
         x_rrcf_Rapp_scaled = self.RappModel(x_rrcf)
 
         #xrrcf = x_rrcf * tf.cast(noise_scaling_factor, dtype= x_rrcf.dtype)
