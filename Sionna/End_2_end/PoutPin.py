@@ -93,7 +93,44 @@ signal_file_baseline_input_scaled="x_rrcf_signals_baseline_scaled_input.pkl"
 signal_file_baseline_output_scaled = "x_rrcf_BL_scaled_output.pkl"
 
 
+#########################################################
+# Scaled signals
+#########################################################
+signal_file_baseline_input_scaled1="x_rrcf_signals_baseline_scaled_input_V_1.pkl"
+signal_file_baseline_output_scaled1 = "x_rrcf_BL_scaled_output_V_1.pkl"
 
+signal_file_baseline_input_scaled3="x_rrcf_signals_baseline_scaled_input_V_3.pkl"
+signal_file_baseline_output_scaled3 = "x_rrcf_BL_scaled_output_V_3.pkl"
+
+signal_file_baseline_input_scaled5="x_rrcf_signals_baseline_scaled_input_V_5.pkl"
+signal_file_baseline_output_scaled5 = "x_rrcf_BL_scaled_output_V_5.pkl"
+
+
+
+########################################################
+## Scaled 
+########################################################
+
+with open(signal_file_baseline_input_scaled1, "rb") as f:
+    Baseline_input_signal_scaled1 = pickle.load(f)
+
+with open(signal_file_baseline_output_scaled1, "rb") as f:
+    Baseline_output_signal_scaled1 = pickle.load(f)
+
+with open(signal_file_baseline_input_scaled3, "rb") as f:
+    Baseline_input_signal_scaled3 = pickle.load(f)
+
+with open(signal_file_baseline_output_scaled3, "rb") as f:
+    Baseline_output_signal_scaled3 = pickle.load(f)
+
+with open(signal_file_baseline_input_scaled5, "rb") as f:
+    Baseline_input_signal_scaled5 = pickle.load(f)
+
+with open(signal_file_baseline_output_scaled5, "rb") as f:
+    Baseline_output_signal_scaled5 = pickle.load(f)
+##########################################################
+## Others 
+########################################################
 with open(signal_file_baseline_input_scaled, "rb") as f:
     Baseline_input_signal_scaled = pickle.load(f)
 
@@ -233,13 +270,25 @@ with open(signal_file_NN_outputP3, "rb") as f:
 ##############################################
 # Input vs output magnitude 
 ##############################################
-tf.print("shape of input is: ",tf.shape(Baseline_input_signal_scaled[9]))
+#tf.print("shape of input is: ",tf.shape(Baseline_input_signal_scaled[9]))
 
-signalIn = Baseline_input_signal_scaled[9]
-signalOut =Baseline_output_signal_scaled[9]
+signalIn1 = Baseline_input_signal_scaled1[9]
+signalOut1 =Baseline_output_signal_scaled1[9]
 
-signalIn = signalIn[0,:]
-signalOut = signalOut[0,:]
+signalIn3 = Baseline_input_signal_scaled3[9]
+signalOut3 =Baseline_output_signal_scaled3[9]
+
+signalIn5 = Baseline_input_signal_scaled5[9]
+signalOut5 =Baseline_output_signal_scaled5[9]
+
+signalIn1 = signalIn1[0,:]
+signalOut1 = signalOut1[0,:]
+
+signalIn3 = signalIn3[0,:]
+signalOut3 = signalOut3[0,:]
+
+signalIn5 = signalIn5[0,:]
+signalOut5 = signalOut5[0,:]
 
 # Powerin = tf.abs(signalIn)**2  
 # Powerout = tf.abs(signalOut)**2
@@ -263,19 +312,26 @@ signalOut = signalOut[0,:]
 # Normalizedout = Baseline_output_signal_scaled[9]/RMSOut
 # tf.print("shape of input normalized is: ",tf.shape(Normalizedin))
 
-magnitudes = tf.abs(signalIn)
-magnitudes_out = tf.abs(signalOut)
-
+magnitudes = tf.abs(signalIn1)
+magnitudes_out = tf.abs(signalOut1)
+magnitudes3 = tf.abs(signalIn3)
+magnitudes_out3 = tf.abs(signalOut3)
+magnitudes5 = tf.abs(signalIn5)
+magnitudes_out5 = tf.abs(signalOut5)
 # magnitudes = tf.reduce_mean(tf.abs(Baseline_input_signal_scaled[9]),axis = 0)
 # magnitudes_out = tf.reduce_mean(tf.abs(Baseline_output_signal_scaled[9]),axis = 0)
 # magnitudes = tf.abs(tf.reduce_mean(Baseline_input_signal_scaled[9], axis =0))
 # magnitudes_out = tf.abs(tf.reduce_mean(Baseline_output_signal_scaled[9], axis = 0))
-tf.print("shape of magnitudes is: ",tf.shape(magnitudes))
+#tf.print("shape of magnitudes is: ",tf.shape(magnitudes))
 # Plot the magnitude
 
 plt.figure(figsize=(10, 6))
-plt.plot(magnitudes.numpy(), label='Input magnitude')
-plt.plot(magnitudes_out.numpy(), label='Output magnitude')
+plt.plot(magnitudes.numpy(), label='Input')
+plt.plot(magnitudes_out.numpy(), label='Output V=1.0')
+#plt.plot(magnitudes.numpy(), label='Input V=3.0')
+plt.plot(magnitudes_out3.numpy(), label='Output V=3.0')
+#plt.plot(magnitudes.numpy(), label='Input V=5.0')
+plt.plot(magnitudes_out5.numpy(), label='Output V=5.0')
 plt.title('Magnitude of Complex Signal (normalized)')
 plt.xlabel('Sample Index')
 plt.ylabel('Magnitude')
@@ -286,10 +342,12 @@ plt.show()
 # #inputP , outputP = Pout_Pin_Power(Baseline_input_signal_scaled[9],Baseline_output_signal_scaled[9])
 # plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=1")
 
-inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn,signalOut)
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn1,signalOut1)
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=1")
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn3,signalOut3)
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 3.0,p=1")
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn5,signalOut5)
 plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 5.0,p=1")
-
-
 plt.xlabel("Input Power ")
 plt.ylabel("Output Power")
 plt.title("Output Power vs Input Power (scaled)")

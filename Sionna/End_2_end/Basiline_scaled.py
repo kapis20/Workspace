@@ -351,10 +351,10 @@ for ebno_db in selected_ebno_dbs:
     # # Print data types of uncoded and decoded bits
     # print(f"Data Type of Uncoded Bits: {uncoded_bits.dtype}")
     # print(f"Data Type of Decoded Bits: {decoded_bits.dtype}")
-    transmit_energy = tf.reduce_mean(tf.abs(x_rrcf)**2).numpy()
-    print(f"transmit Signal Energy After Matched Filter: {transmit_energy}")
+    #transmit_energy = tf.reduce_mean(tf.abs(x_rrcf)**2).numpy()
+    #print(f"transmit Signal Energy After Matched Filter: {transmit_energy}")
     received_energy = tf.reduce_mean(tf.abs(y_mf)**2).numpy()
-    print(f"Received Signal Energy After Matched Filter: {received_energy}")
+    #print(f"Received Signal Energy After Matched Filter: {received_energy}")
    
     x_rrcf_signals[ebno_db] = x_rrcf  # Add an attribute to store `x_rrcf` in the model
     x_rrcf_Rapp_signals[ebno_db] = x_rrcf_Rapp
@@ -374,25 +374,25 @@ for ebno_db in selected_ebno_dbs:
 
 
 
-ber_BL, bler_BL = sim_ber(
-    model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
-    #soft estimates added for demapping 
-results_baseline['BLER']['baseline'] = bler_BL.numpy()
-results_baseline['BER']['baseline'] = ber_BL.numpy()
+# ber_BL, bler_BL = sim_ber(
+#     model, ebno_dbs, batch_size=BATCH_SIZE, num_target_block_errors=1, max_mc_iter=1,soft_estimates=True) #was used 1000 and 10000
+#     #soft estimates added for demapping 
+# results_baseline['BLER']['baseline'] = bler_BL.numpy()
+# results_baseline['BER']['baseline'] = ber_BL.numpy()
 
-#Save the results to a file (optional)
-with open("bler_results_baseline_NEW_scaled_.pkl", 'wb') as f:
-    pickle.dump(results_baseline, f)
+# #Save the results to a file (optional)
+# with open("bler_results_baseline_NEW_scaled_.pkl", 'wb') as f:
+#     pickle.dump(results_baseline, f)
 
 
 # Save the x_rrcf signals to a file (as NumPy or TF tensors)
-signal_file = "x_rrcf_signals_baseline_scaled_input.pkl"
+signal_file = "x_rrcf_signals_baseline_scaled_input_V_5.pkl"
 with open(signal_file, "wb") as f:
     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_numpy, f)
 
 
-signal_Rappfile = "x_rrcf_BL_scaled_output.pkl"
+signal_Rappfile = "x_rrcf_BL_scaled_output_V_5.pkl"
 with open(signal_Rappfile, "wb") as f:
     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_Rapp_numpy, f)
