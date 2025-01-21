@@ -170,12 +170,13 @@ def compute_cdf(signal):
         cdf (numpy array): CDF corresponding to the sorted values.
     """
     # Flatten and sort the signal, convert from 2D to 1D
-    flattened_signal = signal.flatten()
+    #flattened_signal = signal.flatten()
     # sort in the ascending ordr 
-    x = np.sort(flattened_signal)
-    
+    x = np.sort(signal)
+    print(f"Sahpe of x is {x.shape}")
     # Compute the CDF
-    cdf = np.arange(1, len(x) + 1) / len(x)
+    cdf = np.arange(1, len(x) + 1, dtype=np.float64) / len(x)
+    print(f"Shape  cdf is {cdf.shape}")
     return x, cdf
 
 
@@ -205,11 +206,27 @@ for label, signal in signals.items():
     #magnitude_signal = np.abs(signal)
     # Compute the instantaneous power (|signal|^2)
     print(f"{label}: {signal.shape}")
+
     instantaneous_power = np.abs(signal)**2
+    print(f"{label} - Instantaneous Power (first 10 values): {instantaneous_power[:10]}")
+    print(f"{label} - Contains NaN: {np.any(np.isnan(instantaneous_power))}")
+    print(f"{label}: {instantaneous_power.shape}")
+
+    # Create a boolean mask for NaN values
+    nan_mask = np.isnan(instantaneous_power)
+    # Find the indices of NaN values
+    nan_indices = np.where(nan_mask)
+
+    # Print the indices of NaN values
+    print(f"NaN indices: {nan_indices}")
      # Compute the average power
-    average_power = np.mean(instantaneous_power)
+    average_power = np.mean(instantaneous_power, axis =0)
+    print(f"average power is: {average_power}")
+    #print(f"{label} - average Power (first 10 values): {average_power[:10]}")
+    print(f"{label}: {average_power.shape}")
     # Normalize instantaneous power by average power
     normalized_power = instantaneous_power / average_power
+    print(f"{label} - Normalized Power (first 10 values): {normalized_power[:10]}")
 
     x, cdf = compute_cdf(normalized_power)
     plt.plot(x, cdf, label=label)
