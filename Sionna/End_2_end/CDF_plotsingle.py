@@ -206,9 +206,13 @@ for label, signal in signals.items():
     #magnitude_signal = np.abs(signal)
     # Compute the instantaneous power (|signal|^2)
     print(f"{label}: {signal.shape}")
-
+    print(f"{label} - Contains NaN: {np.any(np.isnan(signal))}")
+    nan_mask = np.isnan(signal)
+    # Find the indices of NaN values
+    nan_indices = np.where(nan_mask)
+    print(f"NaN indices: {nan_indices}")
     instantaneous_power = np.abs(signal)**2
-    print(f"{label} - Instantaneous Power (first 10 values): {instantaneous_power[:10]}")
+    print(f"{label} - Instantaneous Power (first 10 values): {signal[:10]}")
     print(f"{label} - Contains NaN: {np.any(np.isnan(instantaneous_power))}")
     print(f"{label}: {instantaneous_power.shape}")
 

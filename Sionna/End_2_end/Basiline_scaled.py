@@ -223,7 +223,7 @@ class Baseline(Model): # Inherits from Keras Model
         # Non linear noise - Rapp model 
         ########################################
         self.RappModel = RappPowerAmplifier(
-            saturation_amplitude = 5.0,
+            saturation_amplitude = 1.0,
             smoothness_factor = 1
         )
 
@@ -256,12 +256,12 @@ class Baseline(Model): # Inherits from Keras Model
         x_rrcf = self.rrcf(x_us)
         #x_rrcf = x_rrcf/ tf.cast(tf.sqrt(tf.reduce_mean((tf.abs(tf.reduce_mean(x_rrcf, axis =1)))**2)),dtype =x_rrcf.dtype)
         #scale 
-        x_rrcf = tf.abs(x_rrcf)**2  
+        x_rrcf = tf.abs(x_rrcf)
 
-        RMSin = tf.sqrt(x_rrcf)
+        #RMSin = tf.sqrt(x_rrcf)
        
 
-        x_rrcf = x_rrcf/RMSin
+        #x_rrcf = x_rrcf/RMSin
       
         # scaling_factor = tf.sqrt((tf.reduce_mean(tf.abs(x_rrcf),axis = 0))**2)  # Compute current signal energy
         # x_rrcf = x_rrcf / tf.cast( tf.sqrt((tf.reduce_mean(tf.abs(x_rrcf),axis = 0))**2), dtype=x_rrcf.dtype)
@@ -272,6 +272,8 @@ class Baseline(Model): # Inherits from Keras Model
  
         x_rrcf = tf.cast(x_rrcf, dtype=tf.complex64)
         x_rrcf_Rapp_scaled = self.RappModel(x_rrcf)
+        x_rrcf = tf.sqrt(x_rrcf)
+        x_rrcf_Rapp_scaled = tf.sqrt(x_rrcf_Rapp_scaled)
 
         #xrrcf = x_rrcf * tf.cast(noise_scaling_factor, dtype= x_rrcf.dtype)
         #x_rrcf_Rapp = x_rrcf_Rapp_scaled * tf.cast(scaling_factor, dtype= x_rrcf_Rapp_scaled.dtype)
