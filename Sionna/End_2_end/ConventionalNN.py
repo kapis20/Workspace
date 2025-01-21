@@ -74,7 +74,7 @@ span_in_symbols = 32 # Filter span in symbold
 samples_per_symbol = 4 # Number of samples per symbol, i.e., the oversampling factor
 
 
-BATCH_SIZE = tf.constant(128, tf.int32) # Training batch size#10 #how many examples are processed by sionna in parallel 
+BATCH_SIZE = tf.constant(1, tf.int32) # Training batch size#10 #how many examples are processed by sionna in parallel 
 lenght_of_block = int(num_symbols_per_codeword)
 #Name to store weights 
 model_weights_path = "weights-neural-demapper-Conventional"
@@ -202,7 +202,7 @@ class End2EndSystem(Model): # Inherits from Keras Model
             # ########################################
             self.RappModel = RappPowerAmplifier(
                 saturation_amplitude = 1,
-                smoothness_factor = 3
+                smoothness_factor = 1
             )
             self.deinterlever = Deinterleaver(self.interleaver) #pass interlever instance
             self.decoder = LDPC5GDecoder(
@@ -264,7 +264,13 @@ class End2EndSystem(Model): # Inherits from Keras Model
 
           ############################
         if not self.training:  # Apply Rapp model only in inference mode
-            #Rapp noise addition 
+            #Rapp noise addition  
+            #Scaling to power of unit 1 
+            x_rrcf = tf.abs(x_rrcf)**2  
+            RMSin = tf.sqrt(x_rrcf)
+            x_rrcf = x_rrcf/RMSin
+            x_rrcf = tf.cast(x_rrcf, dtype=tf.complex64)
+            
             x_rrcf_Rapp = self.RappModel(x_rrcf)
 
         ############################
@@ -435,13 +441,13 @@ print("All selected Eb/N0 evaluations completed.")
 
 
 # Save the x_rrcf signals to a file (as NumPy or TF tensors)
-signal_file = "x_rrcf_signals_trained_NN_conv_P=3(input).pkl"
+signal_file = "x_rrcf_signals_trained_NN_conv_scaled_V_1(input).pkl"
 with open(signal_file, "wb") as f:
     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_numpy, f)
 
 
-signal_Rappfile = "x_rrcf_RappNN_P=3.pkl"
+signal_Rappfile = "x_rrcf_RappNN_scaled_V_1.pkl"
 with open(signal_Rappfile, "wb") as f:
     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_Rapp_numpy, f)

@@ -94,7 +94,7 @@ signal_file_baseline_output_scaled = "x_rrcf_BL_scaled_output.pkl"
 
 
 #########################################################
-# Scaled signals
+# Scaled signals BL
 #########################################################
 signal_file_baseline_input_scaled1="x_rrcf_signals_baseline_scaled_input_V_1.pkl"
 signal_file_baseline_output_scaled1 = "x_rrcf_BL_scaled_output_V_1.pkl"
@@ -105,10 +105,19 @@ signal_file_baseline_output_scaled3 = "x_rrcf_BL_scaled_output_V_3.pkl"
 signal_file_baseline_input_scaled5="x_rrcf_signals_baseline_scaled_input_V_5.pkl"
 signal_file_baseline_output_scaled5 = "x_rrcf_BL_scaled_output_V_5.pkl"
 
+#########################################################
+# Scaled NN
+#########################################################
+signal_file_NN_input_scaled1="x_rrcf_signals_trained_NN_conv_scaled_V_1(input).pkl"
+signal_file_NN_output_scaled1 = "x_rrcf_RappNN_scaled_V_1.pkl"
 
+signal_file_NN_input_scaled3="x_rrcf_signals_trained_NN_conv_scaled_V_3(input).pkl"
+signal_file_NN_output_scaled3 = "x_rrcf_RappNN_scaled_V_3.pkl"
 
+signal_file_NN_input_scaled5="x_rrcf_signals_trained_NN_conv_scaled_V_5(input).pkl"
+signal_file_NN_output_scaled5 = "x_rrcf_RappNN_scaled_V_5.pkl"
 ########################################################
-## Scaled 
+## Scaled BL
 ########################################################
 
 with open(signal_file_baseline_input_scaled1, "rb") as f:
@@ -128,6 +137,28 @@ with open(signal_file_baseline_input_scaled5, "rb") as f:
 
 with open(signal_file_baseline_output_scaled5, "rb") as f:
     Baseline_output_signal_scaled5 = pickle.load(f)
+
+#########################################################
+## Scaled NN 
+#########################################################
+with open(signal_file_NN_input_scaled1, "rb") as f:
+    NN_input_signal_scaled1 = pickle.load(f)
+
+with open(signal_file_NN_output_scaled1, "rb") as f:
+    NN_output_signal_scaled1 = pickle.load(f)
+
+with open(signal_file_NN_input_scaled3, "rb") as f:
+    NN_input_signal_scaled3 = pickle.load(f)
+
+with open(signal_file_NN_output_scaled3, "rb") as f:
+    NN_output_signal_scaled3 = pickle.load(f)
+
+with open(signal_file_NN_input_scaled5, "rb") as f:
+    NN_input_signal_scaled5 = pickle.load(f)
+
+with open(signal_file_NN_output_scaled5, "rb") as f:
+    NN_output_signal_scaled5 = pickle.load(f)
+
 ##########################################################
 ## Others 
 ########################################################
@@ -271,7 +302,9 @@ with open(signal_file_NN_outputP3, "rb") as f:
 # Input vs output magnitude 
 ##############################################
 #tf.print("shape of input is: ",tf.shape(Baseline_input_signal_scaled[9]))
-
+#############################################
+# Baseline
+#############################################
 signalIn1 = Baseline_input_signal_scaled1[9]
 signalOut1 =Baseline_output_signal_scaled1[9]
 
@@ -290,6 +323,26 @@ signalOut3 = signalOut3[0,:]
 signalIn5 = signalIn5[0,:]
 signalOut5 = signalOut5[0,:]
 
+#############################################
+# NN
+#############################################
+signalIn1NN = NN_input_signal_scaled1[9]
+signalOut1NN =NN_output_signal_scaled1[9]
+
+signalIn3NN = NN_input_signal_scaled3[9]
+signalOut3NN =NN_output_signal_scaled3[9]
+
+signalIn5NN = NN_input_signal_scaled5[9]
+signalOut5NN =NN_output_signal_scaled5[9]
+
+signalIn1NN = signalIn1NN[0,:]
+signalOut1NN = signalOut1NN[0,:]
+
+signalIn3NN = signalIn3NN[0,:]
+signalOut3NN = signalOut3NN[0,:]
+
+signalIn5NN = signalIn5NN[0,:]
+signalOut5NN = signalOut5NN[0,:]
 # Powerin = tf.abs(signalIn)**2  
 # Powerout = tf.abs(signalOut)**2
 
@@ -348,6 +401,20 @@ inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn3,signalOut3)
 plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 3.0,p=1")
 inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn5,signalOut5)
 plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 5.0,p=1")
+plt.xlabel("Input Power ")
+plt.ylabel("Output Power")
+plt.title("Output Power vs Input Power (scaled)")
+plt.legend()
+plt.grid()
+plt.show()
+
+
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn1NN,signalOut1NN)
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP, Vsat = 1.0,p=1")
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn3NN,signalOut3NN)
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP, Vsat = 3.0,p=1")
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn5NN,signalOut5NN)
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP, Vsat = 5.0,p=1")
 plt.xlabel("Input Power ")
 plt.ylabel("Output Power")
 plt.title("Output Power vs Input Power (scaled)")
