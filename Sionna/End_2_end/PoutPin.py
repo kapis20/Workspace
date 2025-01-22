@@ -30,16 +30,16 @@ def Pout_Pin_Power(inputSig, outputSig):
 def Pout_Pin_PowerSingleBatch(inputSig, outputSig):
    
   
-    inputPower = tf.abs(inputSig)**2  # Mean power across time/sample axis
-    outputPower = tf.abs(outputSig)**2
-    #Convert to dB
-    # inputPower = tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
-    # outputPower = tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
-    # inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
-    # outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
-
+    # inputPower = tf.abs(inputSig)**2  # Mean power across time/sample axis
+    # outputPower = tf.abs(outputSig)**2
    
+    inputPower = tf.abs(inputSig)
+    inputPower = 20* tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32)) #20 * log 10 
+    inputPower = inputPower +30 #dBm 
 
+    outputPower = tf.abs(outputSig)
+    outputPower = 20* tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32)) #20 * log 10 
+    outputPower = outputPower +30 #dBm 
     return inputPower, outputPower
 
 #baseline model:

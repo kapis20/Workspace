@@ -256,7 +256,7 @@ class Baseline(Model): # Inherits from Keras Model
         x_rrcf = self.rrcf(x_us)
         #x_rrcf = x_rrcf/ tf.cast(tf.sqrt(tf.reduce_mean((tf.abs(tf.reduce_mean(x_rrcf, axis =1)))**2)),dtype =x_rrcf.dtype)
         #scale 
-        x_rrcf = tf.abs(x_rrcf)
+        # x_rrcf = tf.abs(x_rrcf)
 
         #RMSin = tf.sqrt(x_rrcf)
        
@@ -270,10 +270,10 @@ class Baseline(Model): # Inherits from Keras Model
         # #############################
         # #Rapp noise addition x_rrcf
  
-        x_rrcf = tf.cast(x_rrcf, dtype=tf.complex64)
+        # x_rrcf = tf.cast(x_rrcf, dtype=tf.complex64)
         x_rrcf_Rapp_scaled = self.RappModel(x_rrcf)
-        x_rrcf = tf.sqrt(x_rrcf)
-        x_rrcf_Rapp_scaled = tf.sqrt(x_rrcf_Rapp_scaled)
+        # x_rrcf = tf.sqrt(x_rrcf)
+        # x_rrcf_Rapp_scaled = tf.sqrt(x_rrcf_Rapp_scaled)
 
         #xrrcf = x_rrcf * tf.cast(noise_scaling_factor, dtype= x_rrcf.dtype)
         #x_rrcf_Rapp = x_rrcf_Rapp_scaled * tf.cast(scaling_factor, dtype= x_rrcf_Rapp_scaled.dtype)
