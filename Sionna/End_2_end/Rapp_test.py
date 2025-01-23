@@ -20,27 +20,28 @@ def Pout_Pin_Power(inputSig, outputSig):
 
 
 
-# # Generate the tensor for x^2 function
-# x_values = np.linspace(0, 2, 500)  # 500 points between 0 and 2
-# y_values = x_values ** 2
-# input_signal = tf.constant(y_values, dtype=tf.float32)
+# Generate the tensor for x^2 function
+x_values = np.linspace(0, 2, 500)  # 500 points between 0 and 2
+#y_values = x_values ** 2
+input_signal = tf.constant(x_values, dtype=tf.float32)
+tf.print("First 10 abs  (input_signal) scaled:", input_signal[:10])
 
 
-
-# Generate a complex signal
-np.random.seed(42)  # For reproducibility
-real_part = np.linspace(0, 1, 500)  # Real part linearly spaced
-imag_part = np.sin(np.linspace(0, 2 * np.pi, 500))  # Imaginary part as sine wave
-complex_signal = real_part + 1j * imag_part  # Create complex numbers
-input_signal = tf.constant(complex_signal, dtype=tf.complex64)
+# # Generate a complex signal
+# np.random.seed(42)  # For reproducibility
+# real_part = np.linspace(0, 1, 500)  # Real part linearly spaced
+# imag_part = np.sin(np.linspace(0, 2 * np.pi, 500))  # Imaginary part as sine wave
+# complex_signal = real_part + 1j * imag_part  # Create complex numbers
+# input_signal = tf.constant(complex_signal, dtype=tf.complex64)
 rapp_amp = RappPowerAmplifier(saturation_amplitude=1.0, smoothness_factor=1)
 amplified_signal = rapp_amp(input_signal)
 # Compute the magnitude of the complex numbers
-magnitudes = tf.abs(amplified_signal)
+#magnitudes = tf.abs(amplified_signal)
 
 # Plot the magnitude
 plt.figure(figsize=(10, 6))
-plt.plot(magnitudes.numpy(), label='Magnitude')
+plt.plot(amplified_signal.numpy(), label='amplified_signal')
+plt.plot(input_signal.numpy(), label='input_signal')
 plt.title('Magnitude of Complex Signal')
 plt.xlabel('Sample Index')
 plt.ylabel('Magnitude')
