@@ -224,29 +224,35 @@ class Baseline(Model): # Inherits from Keras Model
         ########################################
         self.RappModel = RappPowerAmplifier(
             saturation_amplitude = 1.0,
-            smoothness_factor = 1
+            smoothness_factor = 1.0
         )
 
     
 
-    @tf.function(jit_compile=True) # Enable graph execution to speed things up
+    #@tf.function(jit_compile=True) # Enable graph execution to speed things up
     def __call__(self, batch_size, ebno_db):
         # no channel coding used; we set coderate=1.0
         no = ebnodb2no(ebno_db, num_bits_per_symbol,coderate)
+        # Pin 
+        pin = 10.**(-30/10)# unit: W
+        print("power is ",pin)
         
         uncoded_bits = self.binary_source([batch_size, k]) 
-        #normalize to unit energy 
-        #uncoded_bits = uncoded_bits / tf.sqrt(tf.reduce_mean(tf.abs(uncoded_bits)**2))
-
+        tf.print("First 10 uncoded_bits:", uncoded_bits[:10])
         #############################
         # Transmit
         #############################
 
         bits_e = self.encoder(uncoded_bits)
+        tf.print("First 10 encoded bits (bits_e):", bits_e[:10])
         bits_i = self.interleaver(bits_e)
+        tf.print("First 10 interleaved bits (bits_i):", bits_i[:10])
         x = self.mapper(bits_i)
-    
-        
+        tf.print("First 10 mapper (real part of x):", tf.math.real(x)[:10])
+        tf.print("First 10 mapper (imag part of x):", tf.math.imag(x)[:10])
+        x = x * tf.cast(tf.sqrt(pin), dtype=x.dtype)
+        tf.print("First 10 mapper (real part of x):", tf.math.real(x)[:10])
+        tf.print("First 10 mapper (imag part of x):", tf.math.imag(x)[:10])
         ############################
         #Filter and sampling
         ############################
@@ -254,12 +260,16 @@ class Baseline(Model): # Inherits from Keras Model
 
         #Filter the upsampled sequence 
         x_rrcf = self.rrcf(x_us)
+        tf.print("First 10 filtered (real part of x_rrcf):", tf.math.real(x_rrcf)[:10])
+        tf.print("First 10 filtered (imag part of x_rrcf):", tf.math.imag(x_rrcf)[:10])
         #x_rrcf = x_rrcf/ tf.cast(tf.sqrt(tf.reduce_mean((tf.abs(tf.reduce_mean(x_rrcf, axis =1)))**2)),dtype =x_rrcf.dtype)
         #scale 
         # x_rrcf = tf.abs(x_rrcf)
-
+        inputPower = tf.abs(x_rrcf)
+        inputPower = 20* tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32)) #20 * log 10 
+        inputPower = inputPower +30 #dBm 
         #RMSin = tf.sqrt(x_rrcf)
-       
+        tf.print("First 10 POWER (inputPower):", inputPower[:10])
 
         #x_rrcf = x_rrcf/RMSin
       
@@ -272,6 +282,8 @@ class Baseline(Model): # Inherits from Keras Model
  
         # x_rrcf = tf.cast(x_rrcf, dtype=tf.complex64)
         x_rrcf_Rapp_scaled = self.RappModel(x_rrcf)
+        tf.print("First 10 filtered (real part of x_rrcf_Rapp_scaled):", tf.math.real(x_rrcf_Rapp_scaled)[:10])
+        tf.print("First 10 filtered (imag part of x_rrcf_Rapp_scaled):", tf.math.imag(x_rrcf_Rapp_scaled)[:10])
         # x_rrcf = tf.sqrt(x_rrcf)
         # x_rrcf_Rapp_scaled = tf.sqrt(x_rrcf_Rapp_scaled)
 
