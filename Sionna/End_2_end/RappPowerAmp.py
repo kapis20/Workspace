@@ -33,21 +33,21 @@ class RappPowerAmplifier:
         gain = tf.pow(1 + tf.pow(amplitude / self.saturation_amplitude, 2 * p), 1 / (2 * p))
         tf.print("gain is ",tf.shape(gain))
         tf.print("gain dtype is ", gain.dtype)
-        gain = gain * tf.cast(tf.sqrt(pin), dtype=gain.dtype)
+        #gain = gain * tf.cast(tf.sqrt(pin), dtype=gain.dtype)
         # Convert gain to complex64 to match input_signal
         gain = tf.cast(gain, dtype=input_signal.dtype)
         tf.print("gain is ",tf.shape(gain))
         # Print the first 10 values (or fewer, depending on the tensor size)
          # Print the real part of gain
-        tf.print("gain (real part, last 10):", tf.math.real(gain)[:, -10:])
+        tf.print("gain (real part, first 10):", tf.math.real(gain)[:, 10:])
 
         # Print the imaginary part of gain
-        tf.print("gain (imaginary part, last 10):", tf.math.imag(gain)[:, -10:])
+        tf.print("gain (imaginary part, firat 10):", tf.math.imag(gain)[:, 10:])
         # Print the real part of input
-        tf.print("input (real part, last 10):", tf.math.real(input_signal)[:,-10])
+        tf.print("input (real part, first 10):", tf.math.real(input_signal)[:,10:])
 
         # Print the imaginary part of input
-        tf.print("input (imaginary part, last 10):", tf.math.imag(input_signal)[:,-10])
+        tf.print("input (imaginary part, first 10):", tf.math.imag(input_signal)[:,10:])
 
         # tf.print("gain last 10):", gain[: -10:])
         # tf.print("input last 10):", input_signal[: -10:])

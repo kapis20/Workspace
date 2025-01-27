@@ -252,10 +252,10 @@ class Baseline(Model): # Inherits from Keras Model
         tf.print("First 10 mapper (imag part of x):", tf.math.imag(x)[:10])
         tf.print("First 10 abs x (x):", tf.abs(x[:10]))
 
-        x = x * tf.cast(tf.sqrt(pin), dtype=x.dtype)
-        tf.print("First 10 mapper (real part of x):", tf.math.real(x)[:10])
-        tf.print("First 10 mapper (imag part of x):", tf.math.imag(x)[:10])
-        tf.print("First 10 abs x (x) scaled:", tf.abs(x[:10]))
+        # x = x * tf.cast(tf.sqrt(pin), dtype=x.dtype)
+        # tf.print("First 10 mapper (real part of x):", tf.math.real(x)[:10])
+        # tf.print("First 10 mapper (imag part of x):", tf.math.imag(x)[:10])
+        # tf.print("First 10 abs x (x) scaled:", tf.abs(x[:10]))
         ############################
         #Filter and sampling
         ############################
@@ -286,8 +286,8 @@ class Baseline(Model): # Inherits from Keras Model
  
         # x_rrcf = tf.cast(x_rrcf, dtype=tf.complex64)
         x_rrcf_Rapp_scaled = self.RappModel(x_rrcf)
-        tf.print("First 10 filtered (real part of x_rrcf_Rapp_scaled):", tf.math.real(x_rrcf_Rapp_scaled)[:10])
-        tf.print("First 10 filtered (imag part of x_rrcf_Rapp_scaled):", tf.math.imag(x_rrcf_Rapp_scaled)[:10])
+        tf.print("First 10 filtered (real part of x_rrcf_Rapp_scaled):", tf.math.real(x_rrcf_Rapp_scaled)[:, 10:])
+        tf.print("First 10 filtered (imag part of x_rrcf_Rapp_scaled):", tf.math.imag(x_rrcf_Rapp_scaled)[:, 10:])
 
         outputPower = tf.abs(x_rrcf_Rapp_scaled)
         outputPower = 20* tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32)) #20 * log 10 
