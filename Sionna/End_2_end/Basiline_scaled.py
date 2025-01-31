@@ -409,13 +409,13 @@ for ebno_db in selected_ebno_dbs:
 
 
 # Save the x_rrcf signals to a file (as NumPy or TF tensors)
-signal_file = "x_rrcf_signals_baseline_scaled_input_V_5.pkl"
+signal_file = "x_rrcf_signals_baseline_scaled_input_V_1.pkl"
 with open(signal_file, "wb") as f:
     x_rrcf_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_numpy, f)
 
 
-signal_Rappfile = "x_rrcf_BL_scaled_output_V_5.pkl"
+signal_Rappfile = "x_rrcf_BL_scaled_output_V_1.pkl"
 with open(signal_Rappfile, "wb") as f:
     x_rrcf_Rapp_numpy = {ebno_db: x.numpy() for ebno_db, x in x_rrcf_Rapp_signals.items()}  # Convert to NumPy for storage
     pickle.dump(x_rrcf_Rapp_numpy, f)

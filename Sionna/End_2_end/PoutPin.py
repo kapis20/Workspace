@@ -17,8 +17,8 @@ def Pout_Pin_Power(inputSig, outputSig):
     inputPower = tf.reduce_mean(tf.abs(inputSig)**2, axis=0)  # Mean power across time/sample axis
     outputPower = tf.reduce_mean(tf.abs(outputSig)**2, axis=0)
     #Convert to dB
-    inputPower = tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
-    outputPower = tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
+    # inputPower = tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
+    # outputPower = tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32))
     # inputPower = np.mean(np.abs(inputSig)**2, axis=0)  # Average over signal across corresponding batch signal (columns)
     # outputPower = np.mean(np.abs(outputSig)**2, axis=0)  # Average over signal dimension
 
@@ -28,18 +28,22 @@ def Pout_Pin_Power(inputSig, outputSig):
 
 
 def Pout_Pin_PowerSingleBatch(inputSig, outputSig):
-   
-  
-    # inputPower = tf.abs(inputSig)**2  # Mean power across time/sample axis
-    # outputPower = tf.abs(outputSig)**2
-   
     inputPower = tf.abs(inputSig)
     inputPower = 20* tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32)) #20 * log 10 
     inputPower = inputPower +30 #dBm 
-
     outputPower = tf.abs(outputSig)
     outputPower = 20* tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32)) #20 * log 10 
     outputPower = outputPower +30 #dBm 
+    # inputPower = tf.abs(inputSig)**2  # Mean power across time/sample axis
+    # outputPower = tf.abs(outputSig)**2
+   
+    # inputPower = tf.square(tf.abs(inputSig))
+    # inputPower = 20* tf.math.log(inputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32)) #20 * log 10 
+    # inputPower = inputPower +30 #dBm 
+
+    # outputPower = tf.square(tf.abs(outputSig))
+    # outputPower = 20* tf.math.log(outputPower) / tf.math.log(tf.constant(10.0, dtype=tf.float32)) #20 * log 10 
+    # outputPower = outputPower +30 #dBm 
     return inputPower, outputPower
 
 #baseline model:
@@ -413,26 +417,39 @@ plt.legend()
 plt.grid()
 plt.show()
 
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn5,signalOut5)
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 5.0,p=1")
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn3,signalOut3)
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 3.0,p=1")
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn1,signalOut1)
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.0,p=1")
+# plt.plot(inputP,  inputP, alpha=0.5, label="TX filter")
+plt.xlabel("Input Power")
+plt.ylabel("Output Power")
+plt.title("Output Power vs Input Power")
+plt.legend()
+plt.grid()
+plt.show()
 
-# inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn1NN,signalOut1NN)
-# plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP, Vsat = 1.0,p=1")
-# inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn3NN,signalOut3NN)
-# plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP, Vsat = 3.0,p=1")
-# inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn5NN,signalOut5NN)
-# plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP, Vsat = 5.0,p=1")
-# plt.xlabel("Input Power ")
-# plt.ylabel("Output Power")
-# plt.title("Output Power vs Input Power (scaled)")
-# plt.legend()
-# plt.grid()
-# plt.show()
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn1NN,signalOut1NN)
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP, Vsat = 1.0,p=1")
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn3NN,signalOut3NN)
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP, Vsat = 3.0,p=1")
+inputP, outputP = Pout_Pin_PowerSingleBatch(signalIn5NN,signalOut5NN)
+plt.plot(inputP,  outputP, alpha=0.5, label="E2E RAPP, Vsat = 5.0,p=1")
+plt.xlabel("Input Power ")
+plt.ylabel("Output Power")
+plt.title("Output Power vs Input Power")
+plt.legend()
+plt.grid()
+plt.show()
 
-# inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV15_scaled[9],Baseline_output_signals_V15_scaled[9])
-# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.5,p=100")
-# inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_25_scaled[9],Baseline_output_signals_V1_25_scaled[9])
-# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.25,p=100")
-# inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_scaled[9],Baseline_output_signals_V1_scaled[9])
-# plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1,p=100")
+inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV15_scaled[9],Baseline_output_signals_V15_scaled[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.5,p=100")
+inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_25_scaled[9],Baseline_output_signals_V1_25_scaled[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1.25,p=100")
+inputP , outputP = Pout_Pin_Power(Baseline_input_signalsV1_scaled[9],Baseline_output_signals_V1_scaled[9])
+plt.plot(inputP,  outputP, alpha=0.5, label="BL RAPP, Vsat = 1,p=100")
 
 # #print("Sahpe is",Baseline_Input[9].shape)
 # plt.plot(10 * np.log10(inputP),  10 * np.log10(outputP), alpha=0.5, label="RAPP P=1")
@@ -445,9 +462,9 @@ plt.show()
 
 
 
-# plt.xlabel("Input Power")
-# plt.ylabel("Output Power")
-# plt.title("Output Power vs Input Power")
-# plt.legend()
-# plt.grid()
-# plt.show()
+plt.xlabel("Input Power")
+plt.ylabel("Output Power")
+plt.title("Output Power vs Input Power")
+plt.legend()
+plt.grid()
+plt.show()

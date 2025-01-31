@@ -22,7 +22,7 @@ def Pout_Pin_Power(inputSig, outputSig):
 
 # Generate the tensor for x^2 function
 x_values = np.linspace(0, 2, 500)  # 500 points between 0 and 2
-#y_values = x_values ** 2
+y_values = x_values ** 2
 input_signal = tf.constant(x_values, dtype=tf.float32)
 tf.print("First 10 abs  (input_signal) scaled:", input_signal[:10])
 
@@ -50,26 +50,26 @@ plt.legend()
 plt.show()
 
 
-# Create a tensor of shape [batch_size, values]
-batch_size = 10
-values = 10
-data = np.tile(np.arange(1, values + 1), (batch_size, 1))
-tensor = tf.constant(data, dtype=tf.float32)
-print("Tensor shape:", tensor.shape)
-print("Tensor contents:\n", tensor.numpy())
-tensor_mean = tf.reduce_mean(tensor, axis = 1)
-print("Tensor mean shape:", tensor_mean.shape)
-print("Tensor mean contents:\n", tensor_mean.numpy())
-# Smoothness factors to evaluate
-p_factors = [1, 2, 5, 10]
+# # Create a tensor of shape [batch_size, values]
+# batch_size = 10
+# values = 10
+# data = np.tile(np.arange(1, values + 1), (batch_size, 1))
+# tensor = tf.constant(data, dtype=tf.float32)
+# print("Tensor shape:", tensor.shape)
+# print("Tensor contents:\n", tensor.numpy())
+# tensor_mean = tf.reduce_mean(tensor, axis = 1)
+# print("Tensor mean shape:", tensor_mean.shape)
+# print("Tensor mean contents:\n", tensor_mean.numpy())
+# # Smoothness factors to evaluate
+# p_factors = [1, 2, 5, 10]
 
 
-# Calculate P_in and P_out for each smoothness factor
-input_powers = []
-output_powers = []
+# # Calculate P_in and P_out for each smoothness factor
+# input_powers = []
+# output_powers = []
 
-# Create a dictionary to store input vs output signals
-input_vs_output = {}
+# # Create a dictionary to store input vs output signals
+# input_vs_output = {}
 
 ##############################
 # Complex numbers 
@@ -77,17 +77,17 @@ input_vs_output = {}
 
 # input_vs_output = {}
 
-# for p in p_factors:
-#     # Initialize the RappPowerAmplifier
-#     rapp_amp = RappPowerAmplifier(saturation_amplitude=1.0, smoothness_factor=p)
-#     # Process the input signal through the power amplifier
-#     amplified_signal = rapp_amp(input_signal)
-#     # Compute input and output power
-#     input_power, output_power = Pout_Pin_Power(input_signal, amplified_signal)
-#     input_powers.append(input_power)
-#     output_powers.append(output_power)
-#     # Store input vs output data for plotting
-#     input_vs_output[p] = amplified_signal.numpy()
+for p in p_factors:
+    # Initialize the RappPowerAmplifier
+    rapp_amp = RappPowerAmplifier(saturation_amplitude=1.0, smoothness_factor=p)
+    # Process the input signal through the power amplifier
+    amplified_signal = rapp_amp(input_signal)
+    # Compute input and output power
+    input_power, output_power = Pout_Pin_Power(input_signal, amplified_signal)
+    input_powers.append(input_power)
+    output_powers.append(output_power)
+    # Store input vs output data for plotting
+    input_vs_output[p] = amplified_signal.numpy()
 
 # # Create subplots for the two graphs
 # fig, axes = plt.subplots(1, 2, figsize=(15, 6))
