@@ -70,6 +70,8 @@ class Baseline(Model):
         self.constellation = constellation
         self._mapper = Mapper(constellation=constellation)
 
+        
+
         ################
         ## Channel
         ################
@@ -101,6 +103,7 @@ class Baseline(Model):
         ################
         b = self._binary_source([batch_size, inf_bits])
         c = self._encoder(b)
+        
         # Modulation
         x = self._mapper(c) # x [batch size, num_symbols_per_codeword]
 
